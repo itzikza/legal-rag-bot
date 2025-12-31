@@ -195,7 +195,4 @@ if __name__ == "__main__":
         print(f"Application error: {e}")
         exit(1)
 
-def search_documents(query: str, top_k: int = 5):
-    return retrieved_docs
-def generate_answer(query: str, context_docs):
-    return answer
+
