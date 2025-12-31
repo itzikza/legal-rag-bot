@@ -1,8 +1,15 @@
 # # Legal Search Assistant
 
-This project is a semantic legal search assistant built with Python.  
-It allows you to upload legal documents (PDF or DOCX), embed them using the Gemini API, and store them in a PostgreSQL database.  
-Later, you can query these documents via the command line to retrieve the most semantically relevant legal sections.
+## 🚀 Why this project matters
+
+This project demonstrates how to build a production-grade RAG (Retrieval-Augmented Generation) system
+that answers legal questions based on real documents — not hallucinations.
+
+The focus is on:
+- Reliability and accuracy
+- Clear system architecture
+- Separation between ingestion, retrieval, and answering
+
 
 ---
 
