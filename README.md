@@ -1,4 +1,4 @@
-# # Legal Search Assistant
+# # Decision-making RAG Agent
 
 ## 🚀 Why this project matters
 
