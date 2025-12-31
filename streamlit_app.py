@@ -6,27 +6,84 @@ import numpy as np
 import google.generativeai as genai
 from langchain_core.embeddings import Embeddings
 
-# --- קונפיגורציה ועיצוב יוקרתי ---
-st.set_page_config(page_title="Elite Legal AI", page_icon="⚖️", layout="wide")
+# --- Apple-Inspired UI Configuration ---
+st.set_page_config(page_title="Legal Intel Pro", page_icon="⚖️", layout="wide")
 
+# Custom CSS for Apple-like Aesthetics
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; }
-    .stButton>button { background-color: #1c2e4a; color: white; border-radius: 5px; }
-    .legal-card { 
-        background-color: white; padding: 20px; border-radius: 10px; 
-        border-left: 5px solid #d4af37; box-shadow: 2px 2px 10px rgba(0,0,0,0.1);
-        margin-bottom: 20px;
+    /* Google Font Import */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+    
+    html, body, [class*="css"]  {
+        font-family: 'Inter', sans-serif;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     }
-    .source-tag {
-        background-color: #eef2f7; color: #1c2e4a; padding: 2px 8px;
-        border-radius: 4px; font-size: 0.8rem; font-weight: bold;
+
+    /* Glassmorphism Effect */
+    .stApp {
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(10px);
     }
-    h1 { color: #1c2e4a; font-family: 'Playfair Display', serif; }
+
+    /* Main Container Styling */
+    .legal-container {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 30px;
+        border-radius: 24px;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        margin-bottom: 25px;
+    }
+
+    /* Typography */
+    h1 {
+        color: #1d1d1f;
+        font-weight: 600 !important;
+        letter-spacing: -0.02em;
+        text-align: center;
+    }
+
+    /* Buttons - Apple Style */
+    .stButton>button {
+        background-color: #0071e3;
+        color: white;
+        border-radius: 980px;
+        padding: 8px 20px;
+        border: none;
+        font-weight: 400;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #0077ed;
+        transform: scale(1.02);
+    }
+
+    /* Chat Bubbles */
+    .user-msg {
+        background: #0071e3;
+        color: white;
+        padding: 15px;
+        border-radius: 18px 18px 4px 18px;
+        margin: 10px 0;
+        width: fit-content;
+        max-width: 80%;
+        margin-left: auto;
+    }
+    .ai-msg {
+        background: white;
+        color: #1d1d1f;
+        padding: 15px;
+        border-radius: 18px 18px 18px 4px;
+        margin: 10px 0;
+        width: fit-content;
+        max-width: 80%;
+        border: 1px solid #d2d2d7;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- לוגיקה טכנית (RAG Engine) ---
+# --- Backend Logic (RAG Engine) ---
 def get_secrets():
     return {
         "POSTGRES_URL": st.secrets["POSTGRES_URL"],
@@ -50,7 +107,6 @@ class PostgreSQLVectorStore:
         query_embedding = np.array(self.embeddings.embed_query(query))
         conn = psycopg2.connect(self.postgres_url)
         cursor = conn.cursor()
-        # שליפת מסמכים מאונדקסים
         cursor.execute("SELECT chunk_text, embedding, filename FROM legal_chunks LIMIT 1000")
         rows = cursor.fetchall()
         
@@ -64,73 +120,58 @@ class PostgreSQLVectorStore:
         conn.close()
         return results[:k]
 
-# --- ממשק המשתמש (UI) ---
-with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3437/3437364.png", width=80)
-    st.title("System Status")
-    st.success("Connection: Neon DB Active")
-    st.info("Model: Gemini 1.5 Flash")
-    st.divider()
-    st.markdown("### Suggested Queries")
-    if st.button("Analyze liability clauses"):
-        st.session_state.temp_prompt = "What are the main liability limitations in our contracts?"
-    if st.button("Summary of termination rights"):
-        st.session_state.temp_prompt = "Explain the notice period for termination."
+# --- UI Header ---
+st.markdown("<h1>Intelligence. Engineered for Law.</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #86868b;'>Experience the future of legal research with RAG technology.</p>", unsafe_allow_html=True)
 
-col1, col2 = st.columns([2, 1])
+# Main Layout
+col_left, col_right = st.columns([1, 2])
 
-with col1:
-    st.title("⚖️ Elite Legal Intelligence Hub")
-    st.markdown("#### High-Precision RAG Analysis for Global Firms")
+with col_left:
+    st.markdown("<div class='legal-container'>", unsafe_allow_html=True)
+    st.subheader("Control Center")
+    st.info("Status: Fully Operational")
+    st.write("Current Index: Legal Corpus v1.2")
+    if st.button("Reset Session"):
+        st.session_state.messages = []
+        st.rerun()
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with col_right:
+    # Chat History Container
+    chat_container = st.container()
     
-    # ניהול היסטוריה
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["content"])
+    with chat_container:
+        for msg in st.session_state.messages:
+            div_class = "user-msg" if msg["role"] == "user" else "ai-msg"
+            st.markdown(f"<div class='{div_class}'>{msg['content']}</div>", unsafe_allow_html=True)
 
-    # קלט משתמש
-    prompt = st.chat_input("Enter your legal inquiry...")
-    if "temp_prompt" in st.session_state:
-        prompt = st.session_state.pop("temp_prompt")
-
+    # Input Area
+    prompt = st.chat_input("Ask anything about your documents...")
+    
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.write(prompt)
-        
-        with st.chat_message("assistant"):
-            with st.spinner("Executing semantic retrieval across legal database..."):
-                vector_store = PostgreSQLVectorStore(secrets)
-                results = vector_store.similarity_search(prompt)
-                
-                if results and results[0]['score'] > 0.65:
-                    context = results[0]['text']
-                    source_file = results[0]['file']
-                    score = results[0]['score']
-                    
-                    model = genai.GenerativeModel('gemini-1.5-flash')
-                    response = model.generate_content(
-                        f"You are a senior legal partner. Using the following clause: {context}, "
-                        f"provide a formal and precise answer to: {prompt}. If the text doesn't contain the info, say so."
-                    )
-                    
-                    full_response = response.text
-                    st.markdown(f"<div class='legal-card'>{full_response}</div>", unsafe_allow_html=True)
-                    st.session_state.messages.append({"role": "assistant", "content": full_response})
-                    
-                    with col2:
-                        st.markdown("### 🔍 Evidence & Sources")
-                        st.markdown(f"**Primary Source:** <span class='source-tag'>{source_file}</span>", unsafe_allow_html=True)
-                        st.markdown(f"**Confidence Score:** `{score:.2%}`")
-                        with st.expander("View Original Text Segment"):
-                            st.write(context)
-                else:
-                    st.warning("No high-confidence legal matches found in the current index.")
+        st.rerun()
 
-with col2:
-    if not st.session_state.messages:
-        st.markdown("### 🔍 Evidence Hub")
-        st.write("Perform a search to see supporting legal segments and confidence scores.")
+    # Process AI Response if last message is from user
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        with st.spinner("Analyzing context..."):
+            last_prompt = st.session_state.messages[-1]["content"]
+            vector_store = PostgreSQLVectorStore(secrets)
+            results = vector_store.similarity_search(last_prompt)
+            
+            if results and results[0]['score'] > 0.6:
+                context = results[0]['text']
+                source = results[0]['file']
+                
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                response = model.generate_content(f"Answer formally: {last_prompt} based on {context}")
+                
+                full_text = f"{response.text}\n\n**Source:** {source}"
+                st.session_state.messages.append({"role": "assistant", "content": full_text})
+                st.rerun()
+            else:
+                st.error("No relevant legal context found.")
