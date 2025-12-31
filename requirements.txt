@@ -20,3 +20,9 @@ pypdf==3.17.4
 # For DOCX support
 docx2txt==0.8
 
+# UI
+streamlit
+
+# OpenAI Integration
+langchain-openai
+openai
