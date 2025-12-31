@@ -1,14 +1,37 @@
-# # Decision-making RAG Agent
+# Decision-Making RAG Agent – Legal Search Assistant
 
-## 🚀 Why this project matters
+> **TL;DR for recruiters:**  
+> A production-oriented Retrieval-Augmented Generation (RAG) agent that answers legal questions
+> based strictly on real documents — designed with clear architecture, strong error handling,
+> and security best practices in mind.
 
-This project demonstrates how to build a production-grade RAG (Retrieval-Augmented Generation) system
-that answers legal questions based on real documents — not hallucinations.
+---
 
-The focus is on:
+## 🚀 Why This Project Matters
+
+This project demonstrates how to build a **production-grade RAG (Retrieval-Augmented Generation) agent**
+that provides reliable, grounded answers to legal questions — without hallucinations.
+
+Unlike simple semantic search tools, this system is designed as an **intelligent agent** with a clear
+separation between ingestion, retrieval, and answer generation.
+
+Key focus areas:
 - Reliability and accuracy
-- Clear system architecture
-- Separation between ingestion, retrieval, and answering
+- Clear, modular system architecture
+- Hallucination reduction via retrieval grounding
+- Security and production-readiness
+
+---
+
+## 💼 Real-World Use Case
+
+This system can be used by:
+- Legal teams searching across contracts, laws, and regulations
+- Compliance officers retrieving specific clauses or obligations
+- Internal legal knowledge bases for structured document Q&A
+
+The agent ensures that answers are always grounded in source documents, making it suitable for
+**regulated and high-stakes environments**.
 
 ## 🧠 Agent Logic (High-Level)
 
@@ -20,6 +43,17 @@ The system is designed as an agent, not just a search tool:
 4. The system avoids unsupported answers (hallucinations)
 
 ---
+## 🏗️ System Architecture
+
+Legal Documents (PDF / DOCX)
+↓
+Text Extraction & Chunking
+↓
+Embedding (Google Gemini API)
+↓
+PostgreSQL Vector Store
+↑
+User Query → Semantic Retrieval → LLM → Grounded Answer
 
 ## Project Structure
 
