@@ -24,7 +24,7 @@ st.markdown("""
     }
     h1 { color: #1c2e4a; font-family: 'Playfair Display', serif; }
     </style>
-    """, unsafe_allow_stdio=True)
+    """, unsafe_allow_html=True)
 
 # --- לוגיקה טכנית (RAG Engine) ---
 def get_secrets():
