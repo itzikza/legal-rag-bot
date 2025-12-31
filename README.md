@@ -10,6 +10,14 @@ The focus is on:
 - Clear system architecture
 - Separation between ingestion, retrieval, and answering
 
+## 🧠 Agent Logic (High-Level)
+
+The system is designed as an agent, not just a search tool:
+
+1. User submits a natural language query
+2. Relevant document chunks are retrieved from a vector store
+3. The LLM generates an answer grounded only in retrieved context
+4. The system avoids unsupported answers (hallucinations)
 
 ---
 
