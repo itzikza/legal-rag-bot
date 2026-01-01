@@ -6,30 +6,30 @@ import numpy as np
 import google.generativeai as genai
 from langchain_core.embeddings import Embeddings
 
-# --- LEXIS AI: PRO CYBER-DARK EDITION ---
+# --- LEXIS AI: REFINED CYBER-DARK ---
 st.set_page_config(page_title="Lexis AI | Elite Legal RAG", page_icon="⚖️", layout="wide")
 
-# הזרקת CSS מתקדם - פונטים של אלון גבאי ואפקטים של Glow לבן
+# הזרקת CSS משופר - רקע רך יותר, טקסט לבן בוהק ואפקטים של אלון גבאי
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: #050505;
+        background-color: #0a0a0a; /* רקע אפור-פחם נעים יותר */
         color: #ffffff;
     }
 
     .stApp {
-        background: radial-gradient(circle at 50% -20%, #1a1a1a 0%, #050505 100%);
+        background: radial-gradient(circle at 50% -20%, #1a1a1a 0%, #0a0a0a 100%);
     }
 
-    /* כותרות בסגנון אלון גבאי - גדולות ונועזות */
+    /* כותרת מותג */
     .brand-title {
         font-size: 5rem;
         font-weight: 800;
         letter-spacing: -4px;
-        background: linear-gradient(135deg, #ffffff 0%, #555555 100%);
+        background: linear-gradient(135deg, #ffffff 0%, #777777 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
@@ -45,38 +45,30 @@ st.markdown("""
         margin-bottom: 1.5rem;
     }
 
-    /* כרטיסיית זכוכית מרכזית */
+    /* כרטיסיית זכוכית - טקסט לבן מוחלט */
     .glass-card {
-        background: rgba(15, 15, 15, 0.4);
-        backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(20, 20, 22, 0.6);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 32px;
-        padding: 50px;
-        margin-bottom: 30px;
-        transition: all 0.5s ease;
+        padding: 45px;
+        margin-bottom: 25px;
+        color: #ffffff !important;
     }
 
-    /* כרטיסיות יתרונות עם מסגרת לבנה זוהרת (Glow) */
     .feature-chip {
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        padding: 12px 24px;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        padding: 10px 22px;
         border-radius: 100px;
-        font-size: 0.9rem;
+        font-size: 0.85rem;
         font-weight: 600;
         color: #ffffff !important;
-        background: rgba(255, 255, 255, 0.02);
-        box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.05);
         display: inline-block;
-        margin-right: 15px;
-        transition: all 0.3s ease;
-    }
-    .feature-chip:hover {
-        border-color: #ffffff;
-        box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-        transform: translateY(-2px);
+        margin-right: 12px;
     }
 
-    /* כפתורי יכולות - נקיים ללא אימוג'ים */
+    /* כפתורי יכולות - Toggle Style */
     div.stButton > button {
         background: rgba(255, 255, 255, 0.03);
         color: #ffffff !important;
@@ -85,22 +77,20 @@ st.markdown("""
         padding: 2.5rem 1rem;
         font-weight: 700;
         font-size: 1.1rem;
-        letter-spacing: 0.5px;
         text-transform: uppercase;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
         height: 100px;
     }
 
     div.stButton > button:hover {
         background: #ffffff;
         color: #000000 !important;
-        border-color: #ffffff;
-        transform: translateY(-5px);
+        transform: translateY(-3px);
     }
 
-    /* תיקון טקסטים בהירים */
-    .stMarkdown p, .stMarkdown li, .stMarkdown span {
-        color: #d1d1d6 !important;
+    /* תיקון טקסטים בהירים בכל האתר */
+    .stMarkdown p, .stMarkdown li, .stMarkdown span, div, label {
+        color: #ffffff !important;
         font-size: 1.1rem;
         line-height: 1.6;
     }
@@ -108,15 +98,15 @@ st.markdown("""
     .source-tag {
         font-size: 0.8rem;
         color: #ffffff;
-        background: rgba(255,255,255,0.1);
-        padding: 4px 12px;
-        border-radius: 6px;
-        font-weight: 700;
+        background: rgba(255,255,255,0.15);
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-weight: 800;
         margin-top: 20px;
         display: inline-block;
+        border: 1px solid rgba(255,255,255,0.2);
     }
 
-    /* העלמת אלמנטים של Streamlit */
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -152,21 +142,19 @@ class PostgreSQLVectorStore:
         conn.close()
         return results[:k]
 
-# --- UI Content ---
+# --- UI Layout ---
 st.markdown("<div class='brand-title'>LEXIS AI</div>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #666; font-size: 1.2rem; letter-spacing: 6px; margin-bottom: 4rem; font-weight: 500;'>ENGINEERED LEGAL INTELLIGENCE</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #888; font-size: 1.2rem; letter-spacing: 6px; margin-bottom: 4rem;'>PRECISION LEGAL INTELLIGENCE</p>", unsafe_allow_html=True)
 
 empty_l, main_col, empty_r = st.columns([1, 2, 1])
 
 with main_col:
-    # Header נגיש ומעוצב
     st.markdown("""
         <div class='glass-card'>
             <div class='section-header'>Your Documents, Empowered.</div>
             <p>
-                Lexis AI is a high-precision intelligence engine designed to transform massive legal document vaults into instant, verifiable answers. 
-                Using advanced RAG technology, we ensure every response is grounded strictly in your private database, 
-                eliminating hallucinations and providing 100% source-backed insights.
+                Lexis AI transforms legal document vaults into instant, verifiable answers. 
+                Using RAG technology, we ensure every response is grounded strictly in your private database.
             </p>
             <div style='margin-top: 30px;'>
                 <div class='feature-chip'>Grounded Accuracy</div>
@@ -176,62 +164,56 @@ with main_col:
         </div>
     """, unsafe_allow_html=True)
 
-    st.markdown("<div class='section-header' style='font-size: 1.2rem; color: #444 !important; text-transform: uppercase;'>Choose Analysis</div>", unsafe_allow_html=True)
-    
+    # לוגיקת Toggle לכפתורים
+    if "active_query" not in st.session_state:
+        st.session_state.active_query = None
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    
-    # כרטיסיות יכולות ללא אימוג'ים
+
+    st.markdown("<div class='section-header' style='font-size: 1.1rem; color: #666 !important;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
-    btn_query = None
 
-    if c1.button("Contract Analysis"): 
-        btn_query = "Identify all critical obligations, risks, and hidden liabilities in the document."
-    if c2.button("Executive Summary"): 
-        btn_query = "Generate an executive summary highlighting the top 5 points for a senior partner."
-    if c3.button("Conflict Finder"): 
-        btn_query = "Scan for clauses that contradict standard market liability or indemnification terms."
+    # פונקציית Toggle
+    def toggle_query(q):
+        if st.session_state.active_query == q:
+            st.session_state.active_query = None # סגירה בלחיצה שנייה
+        else:
+            st.session_state.active_query = q # פתיחה בלחיצה ראשונה
 
-    # תיבת חיפוש עם המשפט החדש
+    if c1.button("Contract Analysis"): toggle_query("Identify all critical obligations and risks.")
+    if c2.button("Executive Summary"): toggle_query("Generate an executive summary for a partner.")
+    if c3.button("Conflict Finder"): toggle_query("Scan for clauses contradicting standard terms.")
+
     chat_input = st.chat_input("ask your legal question...")
-    final_query = chat_input or btn_query
+    final_query = chat_input or st.session_state.active_query
 
     if final_query:
+        # מניעת כפילויות בהיסטוריה
         if not st.session_state.messages or st.session_state.messages[-1]["content"] != final_query:
             st.session_state.messages.append({"role": "user", "content": final_query})
             
-            with st.spinner("Analyzing neural corpus..."):
+            with st.spinner("Processing neural layers..."):
                 try:
                     vector_store = PostgreSQLVectorStore(secrets)
                     results = vector_store.similarity_search(final_query)
-                    
                     if results and results[0]['score'] > 0.6:
                         model = genai.GenerativeModel('gemini-1.5-flash')
-                        response = model.generate_content(
-                            f"You are a senior global legal partner. Based on this legal text: {results[0]['text']}, provide a master-level answer: {final_query}"
-                        )
-                        
-                        answer_html = f"""
-                        <div style='line-height: 1.8; color: #fff; font-weight: 400;'>{response.text}</div>
-                        <div class='source-tag'>
-                            VERIFIED SOURCE: {results[0]['file']} // {int(results[0]['score']*100)}% MATCH
-                        </div>
-                        """
-                        st.session_state.messages.append({"role": "assistant", "content": answer_html})
+                        response = model.generate_content(f"Legal Context: {results[0]['text']}\nQuestion: {final_query}")
+                        answer = f"{response.text}<br><div class='source-tag'>SOURCE: {results[0]['file']} // MATCH: {int(results[0]['score']*100)}%</div>"
+                        st.session_state.messages.append({"role": "assistant", "content": answer})
                     else:
-                        st.session_state.messages.append({"role": "assistant", "content": "Context not found in the neural vault."})
+                        st.session_state.messages.append({"role": "assistant", "content": "Context not found in vault."})
                 except Exception as e:
-                    st.error(f"System Error: {str(e)}")
+                    st.error(f"Error: {str(e)}")
+            st.session_state.active_query = None # איפוס ה-Toggle לאחר ביצוע
             st.rerun()
 
-    # הודעות צ'אט
+    # הצגת הצ'אט בטקסט לבן בוהק
     for msg in reversed(st.session_state.messages):
-        border = "rgba(255,255,255,0.1)" if msg["role"] == "user" else "rgba(255,255,255,0.3)"
+        label = "USER_QUERY" if msg["role"] == "user" else "SYSTEM_RESULT"
         st.markdown(f"""
-            <div class='glass-card' style='border-color: {border}; padding: 35px;'>
-                <div style='color: #666; font-weight: 800; font-size: 0.7rem; margin-bottom: 15px; letter-spacing: 2px;'>
-                    {'● USER_QUERY' if msg["role"] == 'user' else '◆ SYSTEM_RESULT'}
-                </div>
-                <div style='color: #fff !important;'>{msg['content']}</div>
+            <div class='glass-card'>
+                <div style='color: #888; font-weight: 800; font-size: 0.7rem; margin-bottom: 12px; letter-spacing: 2px;'>● {label}</div>
+                <div style='color: #ffffff !important;'>{msg['content']}</div>
             </div>
         """, unsafe_allow_html=True)
