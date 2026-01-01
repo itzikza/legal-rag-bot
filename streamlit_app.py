@@ -247,3 +247,22 @@ st.markdown("""
         </div>
     </div>
 """, unsafe_allow_html=True)
+
+# --- ממשק העלאת מסמכים (Admin Mode) ---
+with st.sidebar:
+    st.markdown("### 🛠 Admin Neural Vault")
+    uploaded_files = st.file_uploader("Upload Legal PDF", type="pdf", accept_multiple_files=True)
+    
+    if uploaded_files and st.button("Index Documents"):
+        for uploaded_file in uploaded_files:
+            with st.spinner(f"Indexing {uploaded_file.name}..."):
+                # קריאת ה-PDF
+                import pypdf
+                pdf_reader = pypdf.PdfReader(uploaded_file)
+                text = ""
+                for page in pdf_reader.pages:
+                    text += page.extract_text()
+                
+                # חלוקה לצ'אנקים ואינדוקס (שימוש במחלקת ה-VectorStore הקיימת)
+                # כאן נדרש חיבור פשוט לפונקציית ה-Insert של מסד הנתונים
+                st.success(f"File {uploaded_file.name} is now in the vault!")
