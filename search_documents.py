@@ -63,7 +63,7 @@ class PostgreSQLVectorStore:
         """Not implemented for read-only store."""
         raise NotImplementedError("Read-only vector store")
     
-    def similarity_search(self, query: str, k: int = 5) -> List[Document]:
+    def similarity_search(self, query: str, k: int = 1) -> List[Document]:
         """Search for k most similar documents using cosine similarity."""
         try:
             query_embedding = np.array(self.embeddings.embed_query(query))
