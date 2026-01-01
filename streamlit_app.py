@@ -6,17 +6,17 @@ import numpy as np
 import google.generativeai as genai
 from langchain_core.embeddings import Embeddings
 
-# --- LEXIS AI: ELITE PORTFOLIO EDITION ---
+# --- LEXIS AI: THE ULTIMATE GLOW EDITION ---
 st.set_page_config(page_title="Lexis AI | Elite Legal RAG", page_icon="⚖️", layout="wide")
 
-# הזרקת CSS מתקדם - פונטים Jakarta, הלבנה מלאה ואפקטים של Glow
+# הזרקת CSS מתקדם - הלבנה מלאה, מסגרות זוהרות ואפקטי Hover
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        background-color: #0d0d0d; /* רקע אפור-פחם רך ויוקרתי */
+        background-color: #0d0d0d;
         color: #ffffff !important;
     }
 
@@ -39,76 +39,89 @@ st.markdown("""
     .glass-card {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px dotted rgba(255, 255, 255, 0.2);
         border-radius: 32px;
         padding: 40px;
         margin-bottom: 25px;
-        transition: all 0.4s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        color: #ffffff !important;
+    }
+    
+    .glass-card:hover {
+        transform: translateY(-10px);
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.06);
     }
 
+    /* כרטיסיות יתרונות עם מסגרת לבנה זוהרת (Glow) */
     .feature-chip {
         border: 1px solid rgba(255, 255, 255, 0.4);
-        padding: 10px 22px;
+        padding: 12px 24px;
         border-radius: 100px;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
         font-weight: 600;
         color: #ffffff !important;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(255, 255, 255, 0.02);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
         display: inline-block;
-        margin-right: 12px;
+        margin-right: 15px;
+        transition: all 0.3s ease;
+    }
+    .feature-chip:hover {
+        border-color: #ffffff;
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+        transform: scale(1.05);
     }
 
-    /* כותרות בתוך הצ'אט - גדולות ולבנות */
+    /* כותרות צ'אט גדולות ולבנות */
     .chat-header {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         font-weight: 800;
         color: #ffffff !important;
-        letter-spacing: -0.5px;
-        margin-bottom: 15px;
-        text-transform: uppercase;
+        letter-spacing: -1px;
+        margin-bottom: 20px;
     }
 
-    /* כפתורי ה-Analysis */
+    /* כפתורי הניתוח - Hover עם צבע הפוך */
     div.stButton > button {
         background: rgba(255, 255, 255, 0.03);
         color: #ffffff !important;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 20px;
         padding: 2.5rem 1rem;
         font-weight: 800;
         font-size: 1.1rem;
-        transition: all 0.3s ease;
+        transition: all 0.4s ease;
         height: 100px;
+        width: 100%;
     }
 
     div.stButton > button:hover {
-        background: #ffffff;
+        background: #ffffff !important;
         color: #000000 !important;
-        transform: translateY(-5px);
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(255, 255, 255, 0.2);
     }
 
-    /* הלבנת כל סוגי הטקסט */
-    .stMarkdown, p, span, div, label, li {
+    /* הלבנת כל האלמנטים */
+    .stMarkdown p, .stMarkdown span, div, label, li {
         color: #ffffff !important;
     }
 
-    /* Footer בסגנון אלון גבאי */
-    .footer-container {
+    /* Footer Elite */
+    .footer-section {
         text-align: center;
-        padding: 80px 0;
-        margin-top: 50px;
+        padding: 100px 0;
+        margin-top: 80px;
         border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
 
-    .footer-title {
-        font-size: 3rem;
+    .footer-cta {
+        font-size: 3.5rem;
         font-weight: 800;
-        margin-bottom: 10px;
-    }
-
-    .footer-sub {
-        color: #888 !important;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
+        letter-spacing: -2px;
     }
 
     #MainMenu, footer, header {visibility: hidden;}
@@ -148,16 +161,16 @@ class PostgreSQLVectorStore:
 
 # --- UI Header ---
 st.markdown("<div class='brand-title'>LEXIS AI</div>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #666; font-size: 1.2rem; letter-spacing: 6px; margin-bottom: 4rem;'>PRECISION LEGAL INTELLIGENCE</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #555; font-size: 1.2rem; letter-spacing: 8px; margin-bottom: 5rem;'>ENGINEERED LEGAL INTELLIGENCE</p>", unsafe_allow_html=True)
 
 empty_l, main_col, empty_r = st.columns([1, 2, 1])
 
 with main_col:
     st.markdown("""
         <div class='glass-card'>
-            <div style='font-size: 2rem; font-weight: 800; margin-bottom: 15px;'>Your Documents, Empowered.</div>
-            <p>Lexis AI transforms complex legal vaults into instant, verifiable answers using RAG technology.</p>
-            <div style='margin-top: 30px;'>
+            <div style='font-size: 2.5rem; font-weight: 800; margin-bottom: 20px; letter-spacing: -1px;'>Your Documents, Empowered.</div>
+            <p style='font-size: 1.2rem; color: #ccc !important;'>Lexis AI transforms complex legal vaults into instant, verifiable answers using high-precision RAG technology.</p>
+            <div style='margin-top: 40px;'>
                 <div class='feature-chip'>Grounded Accuracy</div>
                 <div class='feature-chip'>Private Vector Vault</div>
                 <div class='feature-chip'>Zero Hallucination</div>
@@ -165,77 +178,69 @@ with main_col:
         </div>
     """, unsafe_allow_html=True)
 
-    # לוגיקת Toggle מתוקנת - שימוש ב-Session State כדי למנוע כפילויות ולנהל סגירה
-    if "active_query" not in st.session_state:
-        st.session_state.active_query = None
+    # לוגיקת Toggle אמיתית עם איפוס היסטוריה
+    if "active_btn" not in st.session_state:
+        st.session_state.active_btn = None
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    st.markdown("<div style='font-size: 1.1rem; color: #444; font-weight: 800; margin-bottom: 1.5rem;'>CHOOSE YOUR ANALYSIS</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 1.2rem; color: #444; font-weight: 800; margin-bottom: 2rem; letter-spacing: 2px;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
 
-    # פונקציית Toggle משופרת
-    def handle_toggle(q):
-        if st.session_state.active_query == q:
-            st.session_state.active_query = None # סגירה
+    def trigger_toggle(q):
+        if st.session_state.active_btn == q:
+            st.session_state.active_btn = None
+            st.session_state.messages = [] # ניקוי הצ'אט בסגירה
         else:
-            st.session_state.active_query = q # פתיחה
+            st.session_state.active_btn = q
 
-    if c1.button("CONTRACT ANALYSIS"): handle_toggle("Identify all critical obligations, risks, and hidden liabilities.")
-    if c2.button("EXECUTIVE SUMMARY"): handle_toggle("Generate an executive summary highlighting the top 5 points for a senior partner.")
-    if c3.button("CONFLICT FINDER"): handle_toggle("Scan for clauses that contradict standard market liability terms.")
+    if c1.button("CONTRACT ANALYSIS"): trigger_toggle("Identify critical obligations and hidden risks.")
+    if c2.button("EXECUTIVE SUMMARY"): trigger_toggle("Summarize top 5 executive points for legal counsel.")
+    if c3.button("CONFLICT FINDER"): trigger_toggle("Scan for clauses contradicting standard market terms.")
 
     chat_input = st.chat_input("ask your legal question...")
-    
-    # החלטה מה להריץ: קלט מהצ'אט או מהכפתור (אם הוא במצב פעיל)
-    final_query = chat_input or st.session_state.active_query
+    final_query = chat_input or st.session_state.active_btn
 
     if final_query:
-        # בדיקה אם ההודעה האחרונה שונה - מונע כפילויות במקרה של Toggle
         if not st.session_state.messages or st.session_state.messages[-1]["content"] != final_query:
             st.session_state.messages.append({"role": "user", "content": final_query})
             
-            with st.spinner("Analyzing neural layers..."):
+            with st.spinner("Processing neural layers..."):
                 try:
                     vector_store = PostgreSQLVectorStore(secrets)
                     results = vector_store.similarity_search(final_query)
                     if results and results[0]['score'] > 0.6:
                         model = genai.GenerativeModel('gemini-1.5-flash')
                         response = model.generate_content(f"Legal Context: {results[0]['text']}\nQuestion: {final_query}")
-                        answer = f"{response.text}<br><div class='source-tag'>VERIFIED SOURCE: {results[0]['file']}</div>"
+                        answer = f"{response.text}<br><div style='margin-top:20px; border-radius:8px; background:rgba(255,255,255,0.1); padding:10px; font-weight:800; font-size:0.8rem;'>📍 SOURCE: {results[0]['file']}</div>"
                         st.session_state.messages.append({"role": "assistant", "content": answer})
                     else:
                         st.session_state.messages.append({"role": "assistant", "content": "Context not found in the neural vault."})
                 except Exception as e:
-                    st.error(f"Error: {str(e)}")
+                    st.error(f"System Error: {str(e)}")
             st.rerun()
 
-    # הצגת הודעות - הלבנה מלאה ושינוי פונט כותרת
-    if not st.session_state.active_query and not chat_input:
-        # אם אין שאילתה פעילה, הצג היסטוריה או כלום (מימוש ה-Toggle)
-        pass
-
+    # הצגת הצ'אט - הלבנה מלאה וכותרות גדולות
     for msg in reversed(st.session_state.messages):
-        label = "USER INQUIRY" if msg["role"] == "user" else "SYSTEM RESPONSE"
-        # הסרנו את הנקודה ואת ה-USER_QUERY הישן, החלפנו בכותרת גדולה ולבנה
+        header = "USER INQUIRY" if msg["role"] == "user" else "SYSTEM RESPONSE"
         st.markdown(f"""
-            <div class='glass-card' style='border-color: rgba(255,255,255,0.2);'>
-                <div class='chat-header'>{label}</div>
-                <div style='color: #ffffff !important; font-size: 1.2rem;'>{msg['content']}</div>
+            <div class='glass-card' style='border-color: rgba(255,255,255,0.3);'>
+                <div class='chat-header'>{header}</div>
+                <div style='font-size: 1.3rem; font-weight: 400;'>{msg['content']}</div>
             </div>
         """, unsafe_allow_html=True)
 
-# --- Footer בסגנון אלון גבאי ---
-st.markdown(f"""
-    <div class='footer-container'>
-        <div class='footer-title'>Let's work together.</div>
-        <div class='footer-sub'>Ready to redefine legal intelligence? Get in touch.</div>
-        <div style='display: flex; justify-content: center; gap: 20px;'>
-            <a href='mailto:your-email@gmail.com' style='text-decoration: none;'>
-                <div style='background: #0071e3; color: white; padding: 15px 35px; border-radius: 100px; font-weight: 700;'>Email Me</div>
-            </a>
-            <div style='border: 1px solid #333; color: white; padding: 15px 35px; border-radius: 100px; font-weight: 700;'>© 2026 Lexis AI - Intellectual Property Protected</div>
+# --- Footer Alon Gabai Style ---
+st.markdown("""
+    <div class='footer-section'>
+        <div class='footer-cta'>Let's redefine the law.</div>
+        <p style='color: #666 !important; font-size: 1.2rem; margin-bottom: 40px;'>Ready to deploy enterprise-grade intelligence? Get in touch.</p>
+        <div style='display: flex; justify-content: center; gap: 30px;'>
+            <div style='background: #ffffff; color: #000; padding: 18px 45px; border-radius: 100px; font-weight: 800; cursor: pointer;'>Connect on LinkedIn</div>
+            <div style='border: 1px solid #444; color: #fff; padding: 18px 45px; border-radius: 100px; font-weight: 700;'>© 2026 Lexis AI // Neural Verified</div>
         </div>
-        <div style='margin-top: 40px; color: #444; font-size: 0.8rem;'>Ranked #1 in Legal RAG Prototypes | Verified by Gemini Neural Engine</div>
+        <div style='margin-top: 50px; color: #333; font-size: 0.9rem; letter-spacing: 2px;'>
+            RANKED #1 LEGAL RAG PROTOTYPE | AGENT_ID_0449 // GLOBAL INTELLECTUAL PROPERTY PROTECTED
+        </div>
     </div>
 """, unsafe_allow_html=True)
