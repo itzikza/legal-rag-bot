@@ -5,14 +5,11 @@ streamlit
 langchain>=0.3.0
 langchain-community>=0.3.0
 langchain-core>=0.3.0
-langchain-text-splitters>=0.3.0
 
 # AI/ML
 google-generativeai>=0.8.0
-langchain-openai
-openai
-# נוריד את הגרסה הספציפית של numpy כדי שהמערכת תבחר את המתאימה ביותר
-numpy>=2.1.0
+# הגבלת נומפיי למניעת התנגשויות עם ספריות ישנות
+numpy>=1.24.0,<2.0.0 
 
 # Database
 psycopg2-binary>=2.9.0
@@ -23,5 +20,3 @@ python-dotenv
 # Document support
 pypdf>=3.17.0
 docx2txt
-
-pypdf
