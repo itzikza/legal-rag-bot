@@ -6,10 +6,10 @@ import numpy as np
 import google.generativeai as genai
 from langchain_core.embeddings import Embeddings
 
-# --- LEXIS AI: THE ULTIMATE GLOW EDITION ---
+# --- LEXIS AI: ELITE GLOW EDITION (REFINED) ---
 st.set_page_config(page_title="Lexis AI | Elite Legal RAG", page_icon="⚖️", layout="wide")
 
-# הזרקת CSS מתקדם - הלבנה מלאה, מסגרות זוהרות ואפקטי Hover
+# הזרקת CSS - מסגרות זוהרות, כפתורי Toggle ושיפור ניגודיות ב-Footer
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
@@ -35,26 +35,25 @@ st.markdown("""
         margin-top: 2rem;
     }
 
-    /* כרטיסיית זכוכית - הלבנה מלאה של טקסט */
+    /* כרטיסיית זכוכית עם אפקט ריחוף */
     .glass-card {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px);
-        border: 1px dotted rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 32px;
         padding: 40px;
         margin-bottom: 25px;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: all 0.4s ease;
         color: #ffffff !important;
     }
     
     .glass-card:hover {
         transform: translateY(-10px);
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-color: rgba(255, 255, 255, 0.4);
         box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.06);
     }
 
-    /* כרטיסיות יתרונות עם מסגרת לבנה זוהרת (Glow) */
+    /* כפתורי יתרונות זוהרים */
     .feature-chip {
         border: 1px solid rgba(255, 255, 255, 0.4);
         padding: 12px 24px;
@@ -71,59 +70,55 @@ st.markdown("""
     .feature-chip:hover {
         border-color: #ffffff;
         box-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
-        transform: scale(1.05);
     }
 
-    /* כותרות צ'אט גדולות ולבנות */
-    .chat-header {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: #ffffff !important;
-        letter-spacing: -1px;
-        margin-bottom: 20px;
-    }
-
-    /* כפתורי הניתוח - Hover עם צבע הפוך */
+    /* כפתורי ניתוח עם מסגרת זוהרת - ללא הפיכה ללבן */
     div.stButton > button {
         background: rgba(255, 255, 255, 0.03);
         color: #ffffff !important;
         border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
         border-radius: 20px;
         padding: 2.5rem 1rem;
         font-weight: 800;
         font-size: 1.1rem;
-        transition: all 0.4s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         height: 100px;
         width: 100%;
     }
 
     div.stButton > button:hover {
-        background: #ffffff !important;
-        color: #000000 !important;
-        transform: translateY(-8px);
-        box-shadow: 0 15px 30px rgba(255, 255, 255, 0.2);
-    }
-
-    /* הלבנת כל האלמנטים */
-    .stMarkdown p, .stMarkdown span, div, label, li {
+        border-color: #ffffff !important;
+        background: rgba(255, 255, 255, 0.08) !important;
         color: #ffffff !important;
+        transform: translateY(-8px);
+        box-shadow: 0 0 25px rgba(255, 255, 255, 0.3) !important;
     }
 
-    /* Footer Elite */
-    .footer-section {
-        text-align: center;
-        padding: 100px 0;
-        margin-top: 80px;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .footer-cta {
-        font-size: 3.5rem;
+    /* Footer - כפתור לבן עם כתב שחור */
+    .footer-white-btn {
+        background: #ffffff;
+        color: #000000 !important;
+        padding: 18px 45px;
+        border-radius: 100px;
         font-weight: 800;
-        margin-bottom: 20px;
-        letter-spacing: -2px;
+        text-decoration: none;
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    .footer-white-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
     }
 
+    .chat-header {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #ffffff !important;
+        margin-bottom: 20px;
+    }
+
+    .stMarkdown, p, span, div, label, li { color: #ffffff !important; }
     #MainMenu, footer, header {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
@@ -159,7 +154,7 @@ class PostgreSQLVectorStore:
         conn.close()
         return results[:k]
 
-# --- UI Header ---
+# --- UI Content ---
 st.markdown("<div class='brand-title'>LEXIS AI</div>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #555; font-size: 1.2rem; letter-spacing: 8px; margin-bottom: 5rem;'>ENGINEERED LEGAL INTELLIGENCE</p>", unsafe_allow_html=True)
 
@@ -168,8 +163,8 @@ empty_l, main_col, empty_r = st.columns([1, 2, 1])
 with main_col:
     st.markdown("""
         <div class='glass-card'>
-            <div style='font-size: 2.5rem; font-weight: 800; margin-bottom: 20px; letter-spacing: -1px;'>Your Documents, Empowered.</div>
-            <p style='font-size: 1.2rem; color: #ccc !important;'>Lexis AI transforms complex legal vaults into instant, verifiable answers using high-precision RAG technology.</p>
+            <div style='font-size: 2.5rem; font-weight: 800; margin-bottom: 20px;'>Your Documents, Empowered.</div>
+            <p style='font-size: 1.2rem; color: #ccc !important;'>Instant, verifiable answers using high-precision RAG technology.</p>
             <div style='margin-top: 40px;'>
                 <div class='feature-chip'>Grounded Accuracy</div>
                 <div class='feature-chip'>Private Vector Vault</div>
@@ -178,34 +173,37 @@ with main_col:
         </div>
     """, unsafe_allow_html=True)
 
-    # לוגיקת Toggle אמיתית עם איפוס היסטוריה
-    if "active_btn" not in st.session_state:
-        st.session_state.active_btn = None
+    # ניהול Toggle וצ'אט
+    if "active_toggle" not in st.session_state:
+        st.session_state.active_toggle = None
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    st.markdown("<div style='font-size: 1.2rem; color: #444; font-weight: 800; margin-bottom: 2rem; letter-spacing: 2px;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
+    st.markdown("<div style='font-size: 1.2rem; color: #444; font-weight: 800; margin-bottom: 2rem;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
     c1, c2, c3 = st.columns(3)
 
-    def trigger_toggle(q):
-        if st.session_state.active_btn == q:
-            st.session_state.active_btn = None
-            st.session_state.messages = [] # ניקוי הצ'אט בסגירה
+    # פונקציית Toggle לכרטיסיות
+    def trigger_analysis(q):
+        if st.session_state.active_toggle == q:
+            st.session_state.active_toggle = None
+            st.session_state.messages = [] # סגירת הכל בניקוי
         else:
-            st.session_state.active_btn = q
+            st.session_state.active_toggle = q
+            st.session_state.messages = [] # איפוס כדי להציג רק אחד
 
-    if c1.button("CONTRACT ANALYSIS"): trigger_toggle("Identify critical obligations and hidden risks.")
-    if c2.button("EXECUTIVE SUMMARY"): trigger_toggle("Summarize top 5 executive points for legal counsel.")
-    if c3.button("CONFLICT FINDER"): trigger_toggle("Scan for clauses contradicting standard market terms.")
+    if c1.button("CONTRACT ANALYSIS"): trigger_analysis("Identify critical obligations and hidden risks.")
+    if c2.button("EXECUTIVE SUMMARY"): trigger_analysis("Summarize top 5 executive points for legal counsel.")
+    if c3.button("CONFLICT FINDER"): trigger_analysis("Scan for clauses contradicting standard market terms.")
 
     chat_input = st.chat_input("ask your legal question...")
-    final_query = chat_input or st.session_state.active_btn
+    final_query = chat_input or st.session_state.active_toggle
 
     if final_query:
-        if not st.session_state.messages or st.session_state.messages[-1]["content"] != final_query:
-            st.session_state.messages.append({"role": "user", "content": final_query})
+        # הצגת שאילתה אחת בלבד ללא כפילויות
+        if not st.session_state.messages or st.session_state.messages[0]["content"] != final_query:
+            st.session_state.messages = [{"role": "user", "content": final_query}]
             
-            with st.spinner("Processing neural layers..."):
+            with st.spinner("Analyzing neural layers..."):
                 try:
                     vector_store = PostgreSQLVectorStore(secrets)
                     results = vector_store.similarity_search(final_query)
@@ -215,28 +213,28 @@ with main_col:
                         answer = f"{response.text}<br><div style='margin-top:20px; border-radius:8px; background:rgba(255,255,255,0.1); padding:10px; font-weight:800; font-size:0.8rem;'>📍 SOURCE: {results[0]['file']}</div>"
                         st.session_state.messages.append({"role": "assistant", "content": answer})
                     else:
-                        st.session_state.messages.append({"role": "assistant", "content": "Context not found in the neural vault."})
+                        st.session_state.messages.append({"role": "assistant", "content": "Context not found in neural vault."})
                 except Exception as e:
-                    st.error(f"System Error: {str(e)}")
+                    st.error(f"Error: {str(e)}")
             st.rerun()
 
-    # הצגת הצ'אט - הלבנה מלאה וכותרות גדולות
+    # הצגת הודעות מולבנות
     for msg in reversed(st.session_state.messages):
         header = "USER INQUIRY" if msg["role"] == "user" else "SYSTEM RESPONSE"
         st.markdown(f"""
             <div class='glass-card' style='border-color: rgba(255,255,255,0.3);'>
                 <div class='chat-header'>{header}</div>
-                <div style='font-size: 1.3rem; font-weight: 400;'>{msg['content']}</div>
+                <div style='font-size: 1.3rem; color: #ffffff !important;'>{msg['content']}</div>
             </div>
         """, unsafe_allow_html=True)
 
-# --- Footer Alon Gabai Style ---
+# --- Footer עם כפתור לבן וטקסט שחור ---
 st.markdown("""
-    <div class='footer-section'>
-        <div class='footer-cta'>Let's redefine the law.</div>
+    <div style='text-align: center; padding: 100px 0; margin-top: 80px; border-top: 1px solid rgba(255, 255, 255, 0.05);'>
+        <div style='font-size: 3.5rem; font-weight: 800; margin-bottom: 20px;'>Let's redefine the law.</div>
         <p style='color: #666 !important; font-size: 1.2rem; margin-bottom: 40px;'>Ready to deploy enterprise-grade intelligence? Get in touch.</p>
         <div style='display: flex; justify-content: center; gap: 30px;'>
-            <div style='background: #ffffff; color: #000; padding: 18px 45px; border-radius: 100px; font-weight: 800; cursor: pointer;'>Connect on LinkedIn</div>
+            <a href='#' class='footer-white-btn'>Connect on LinkedIn</a>
             <div style='border: 1px solid #444; color: #fff; padding: 18px 45px; border-radius: 100px; font-weight: 700;'>© 2026 Lexis AI // Neural Verified</div>
         </div>
         <div style='margin-top: 50px; color: #333; font-size: 0.9rem; letter-spacing: 2px;'>
