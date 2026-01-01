@@ -4,10 +4,9 @@ import json
 import psycopg2
 import numpy as np
 import google.generativeai as genai
-from langchain_core.embeddings import Embeddings
-import pypdf  # ספרייה לקריאת PDF
+import pypdf
 
-# --- LEXIS AI: ARCHITECT PRECISION EDITION ---
+# --- LEXIS AI: MASTERPIECE INTEGRATED EDITION ---
 st.set_page_config(page_title="Lexis AI | Elite Legal RAG", page_icon="⚖️", layout="wide")
 
 st.markdown("""
@@ -133,42 +132,25 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- RAG Engine ---
-def get_secrets():
-    return {"POSTGRES_URL": st.secrets["POSTGRES_URL"], "GEMINI_API_KEY": st.secrets["GEMINI_API_KEY"]}
+# --- RAG Engine (Refined) ---
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-secrets = get_secrets()
-genai.configure(api_key=secrets["GEMINI_API_KEY"])
+def embed_text(text):
+    result = genai.embed_content(
+        model="models/embedding-001",
+        content=text,
+        task_type="retrieval_query"
+    )
+    return result['embedding']
 
-class GeminiEmbeddings(Embeddings):
-    def embed_query(self, text: str) -> list[float]:
-        return genai.embed_content(model="models/embedding-001", content=text, task_type="retrieval_query")['embedding']
-
-class PostgreSQLVectorStore:
-    def __init__(self, secrets):
-        self.embeddings = GeminiEmbeddings()
-        self.postgres_url = secrets["POSTGRES_URL"]
-    
-    def similarity_search(self, query: str, k: int = 3):
-        query_embedding = np.array(self.embeddings.embed_query(query))
-        conn = psycopg2.connect(self.postgres_url)
-        cursor = conn.cursor()
-        cursor.execute("SELECT chunk_text, embedding, filename FROM legal_chunks LIMIT 1000")
-        rows = cursor.fetchall()
-        results = []
-        for row in rows:
-            doc_embedding = np.array(row[1] if isinstance(row[1], list) else json.loads(row[1]))
-            score = np.dot(query_embedding, doc_embedding) / (np.linalg.norm(query_embedding) * np.linalg.norm(doc_embedding))
-            results.append({"text": row[0], "score": score, "file": row[2]})
-        results.sort(key=lambda x: x["score"], reverse=True)
-        conn.close()
-        return results[:k]
+def get_db_connection():
+    return psycopg2.connect(st.secrets["POSTGRES_URL"])
 
 # --- UI Content ---
 st.markdown("<div class='brand-title'>LEXIS AI</div>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #555; font-size: 1.2rem; letter-spacing: 8px; margin-bottom: 5rem;'>ENGINEERED LEGAL INTELLIGENCE</p>", unsafe_allow_html=True)
 
-# 1. כרטיסייה מרכזית סטטית
+# 1. כרטיסייה מרכזית
 st.markdown("""
     <div class='static-glass-card'>
         <div style='font-size: 2.8rem; font-weight: 800; margin-bottom: 20px; letter-spacing: -1.5px;'>Your Documents, Empowered.</div>
@@ -184,7 +166,7 @@ st.markdown("""
 if "active_btn" not in st.session_state: st.session_state.active_btn = None
 if "messages" not in st.session_state: st.session_state.messages = []
 
-# --- 2. שורת החיפוש בתוך Container ---
+# 2. שורת החיפוש - ממוקמת מעל ה-Analysis Suite
 with st.container():
     st.markdown("<div class='search-container'>", unsafe_allow_html=True)
     chat_input = st.chat_input("ask your legal question...")
@@ -192,7 +174,6 @@ with st.container():
 
 # 3. ANALYSIS SUITE
 st.markdown("<div style='font-size: 1.2rem; color: #444; font-weight: 800; margin-bottom: 2rem; margin-top: 2rem; letter-spacing: 2px; text-align: center;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
-
 c1, c2, c3 = st.columns(3)
 
 def trigger_toggle(q):
@@ -214,15 +195,29 @@ if final_query:
         st.session_state.messages = [{"role": "user", "content": final_query}]
         with st.spinner("Processing neural layers..."):
             try:
-                vector_store = PostgreSQLVectorStore(secrets)
-                results = vector_store.similarity_search(final_query)
+                q_emb = embed_text(final_query)
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute("SELECT chunk_text, embedding, filename FROM legal_chunks")
+                rows = cur.fetchall()
+                
+                results = []
+                for row in rows:
+                    emb = np.array(json.loads(row[1]) if isinstance(row[1], str) else row[1])
+                    score = np.dot(q_emb, emb) / (np.linalg.norm(q_emb) * np.linalg.norm(emb))
+                    results.append({"text": row[0], "score": score, "file": row[2]})
+                
+                results.sort(key=lambda x: x["score"], reverse=True)
+                
                 if results and results[0]['score'] > 0.6:
                     model = genai.GenerativeModel('gemini-1.5-flash')
-                    response = model.generate_content(f"Legal Context: {results[0]['text']}\nQuestion: {final_query}")
+                    response = model.generate_content(f"Context: {results[0]['text']}\nQuestion: {final_query}")
                     answer = f"{response.text}<br><div style='margin-top:20px; border-radius:12px; border: 1px solid rgba(255,255,255,0.2); padding:15px; font-weight:800;'>📍 VERIFIED SOURCE: {results[0]['file']}</div>"
                     st.session_state.messages.append({"role": "assistant", "content": answer})
                 else:
                     st.session_state.messages.append({"role": "assistant", "content": "Context not found in the neural vault."})
+                cur.close()
+                conn.close()
             except Exception as e:
                 st.error(f"Error: {str(e)}")
         st.rerun()
@@ -236,58 +231,47 @@ for msg in reversed(st.session_state.messages):
         </div>
     """, unsafe_allow_html=True)
 
-# --- 4. NEURAL VAULT: מנגנון העלאת קבצים ואינדוקס אוטומטי ---
+# --- 4. NEURAL VAULT ---
 st.markdown("---")
 st.markdown("<div style='text-align: center; margin-bottom: 2rem;'><h2 style='font-weight: 800;'>NEURAL VAULT</h2><p style='color: #666;'>Securely index new legal intelligence</p></div>", unsafe_allow_html=True)
 
 with st.container():
     st.markdown("<div class='static-glass-card'>", unsafe_allow_html=True)
-    uploaded_files = st.file_uploader("Upload Legal PDF Documents", type="pdf", accept_multiple_files=True, label_visibility="collapsed")
+    uploaded_files = st.file_uploader("Upload Legal PDF", type="pdf", accept_multiple_files=True, label_visibility="collapsed")
     
     if uploaded_files:
         if st.button("⚡ INDEX INTO VAULT"):
-            embedder = GeminiEmbeddings()
             try:
-                conn = psycopg2.connect(secrets["POSTGRES_URL"])
+                conn = get_db_connection()
                 cur = conn.cursor()
-                
-                for uploaded_file in uploaded_files:
-                    with st.spinner(f"Indexing {uploaded_file.name}..."):
-                        # קריאת הטקסט מה-PDF
-                        pdf_reader = pypdf.PdfReader(uploaded_file)
-                        text = ""
-                        for page in pdf_reader.pages:
-                            text += page.extract_text() or ""
-                        
-                        # חלוקה לצ'אנקים (פיסות טקסט)
+                for f in uploaded_files:
+                    with st.spinner(f"Indexing {f.name}..."):
+                        reader = pypdf.PdfReader(f)
+                        text = "".join([p.extract_text() for p in reader.pages])
                         chunks = [text[i:i+1000] for i in range(0, len(text), 800)]
-                        
-                        # הטבעה (Embedding) ושמירה לדאטה-בייס
                         for chunk in chunks:
                             if len(chunk.strip()) < 50: continue
-                            embedding = embedder.embed_query(chunk)
+                            emb = embed_text(chunk)
                             cur.execute(
                                 "INSERT INTO legal_chunks (chunk_text, embedding, filename) VALUES (%s, %s, %s)",
-                                (chunk, json.dumps(embedding), uploaded_file.name)
+                                (chunk, json.dumps(emb), f.name)
                             )
-                
                 conn.commit()
                 cur.close()
                 conn.close()
-                st.success(f"Success: {len(uploaded_files)} documents indexed and ready for analysis.")
+                st.success("Indexing Complete.")
                 st.balloons()
             except Exception as e:
-                st.error(f"Vault Update Failed: {str(e)}")
+                st.error(f"Indexing Failed: {str(e)}")
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
 st.markdown("""
     <div style='text-align: center; padding: 120px 0; margin-top: 100px; border-top: 1px solid rgba(255, 255, 255, 0.05);'>
         <div style='font-size: 4rem; font-weight: 800; margin-bottom: 25px; letter-spacing: -2px;'>Let's redefine the law.</div>
-        <p style='color: #666 !important; font-size: 1.3rem; margin-bottom: 50px;'>Ready to deploy enterprise-grade intelligence? Get in touch.</p>
         <div style='display: flex; justify-content: center; gap: 30px;'>
             <a href='#' class='footer-white-btn'>Connect on LinkedIn</a>
-            <div style='border: 1px solid #444; color: #fff; padding: 18px 45px; border-radius: 100px; font-weight: 700;'>© 2026 Lexis AI // Neural Verified</div>
+            <div style='border: 1px solid #444; color: #fff; padding: 18px 45px; border-radius: 100px; font-weight: 700;'>© 2026 Lexis AI</div>
         </div>
     </div>
 """, unsafe_allow_html=True)
