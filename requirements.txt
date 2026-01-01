@@ -23,3 +23,5 @@ python-dotenv
 # Document support
 pypdf>=3.17.0
 docx2txt
+
+pypdf
