@@ -188,8 +188,11 @@ if "active_btn" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+# --- שינוי המיקום: שורת החיפוש מעל ה-Analysis Suite ---
+chat_input = st.chat_input("ask your legal question...")
+
 # יישור לאמצע של כותרת הניתוח
-st.markdown("<div style='font-size: 1.2rem; color: #444; font-weight: 800; margin-bottom: 2rem; letter-spacing: 2px; text-align: center;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
+st.markdown("<div style='font-size: 1.2rem; color: #444; font-weight: 800; margin-bottom: 2rem; margin-top: 2rem; letter-spacing: 2px; text-align: center;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
 
 c1, c2, c3 = st.columns(3)
 
@@ -205,7 +208,6 @@ if c1.button("CONTRACT ANALYSIS"): trigger_toggle("Identify critical obligations
 if c2.button("EXECUTIVE SUMMARY"): trigger_toggle("Summarize top 5 executive points for legal counsel.")
 if c3.button("CONFLICT FINDER"): trigger_toggle("Scan for clauses contradicting standard market terms.")
 
-chat_input = st.chat_input("ask your legal question...")
 final_query = chat_input or st.session_state.active_btn
 
 if final_query:
