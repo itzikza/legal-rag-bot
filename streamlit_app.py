@@ -5,6 +5,7 @@ import psycopg2
 import numpy as np
 import google.generativeai as genai
 from langchain_core.embeddings import Embeddings
+import pypdf  # ספרייה לקריאת PDF
 
 # --- LEXIS AI: ARCHITECT PRECISION EDITION ---
 st.set_page_config(page_title="Lexis AI | Elite Legal RAG", page_icon="⚖️", layout="wide")
@@ -120,7 +121,6 @@ st.markdown("""
         transition: all 0.3s ease;
     }
 
-    /* תיקון לשורת החיפוש שתהיה בתוך הקונטיינר ולא למטה */
     .search-container {
         margin-bottom: 4rem;
     }
@@ -133,7 +133,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- RAG Engine (ללא שינוי) ---
+# --- RAG Engine ---
 def get_secrets():
     return {"POSTGRES_URL": st.secrets["POSTGRES_URL"], "GEMINI_API_KEY": st.secrets["GEMINI_API_KEY"]}
 
@@ -184,7 +184,7 @@ st.markdown("""
 if "active_btn" not in st.session_state: st.session_state.active_btn = None
 if "messages" not in st.session_state: st.session_state.messages = []
 
-# --- 2. שורת החיפוש בתוך Container כדי למנוע ממנה לצוף למטה ---
+# --- 2. שורת החיפוש בתוך Container ---
 with st.container():
     st.markdown("<div class='search-container'>", unsafe_allow_html=True)
     chat_input = st.chat_input("ask your legal question...")
@@ -235,6 +235,50 @@ for msg in reversed(st.session_state.messages):
             <div style='font-size: 1.4rem; font-weight: 400; color: #ffffff !important;'>{msg['content']}</div>
         </div>
     """, unsafe_allow_html=True)
+
+# --- 4. NEURAL VAULT: מנגנון העלאת קבצים ואינדוקס אוטומטי ---
+st.markdown("---")
+st.markdown("<div style='text-align: center; margin-bottom: 2rem;'><h2 style='font-weight: 800;'>NEURAL VAULT</h2><p style='color: #666;'>Securely index new legal intelligence</p></div>", unsafe_allow_html=True)
+
+with st.container():
+    st.markdown("<div class='static-glass-card'>", unsafe_allow_html=True)
+    uploaded_files = st.file_uploader("Upload Legal PDF Documents", type="pdf", accept_multiple_files=True, label_visibility="collapsed")
+    
+    if uploaded_files:
+        if st.button("⚡ INDEX INTO VAULT"):
+            embedder = GeminiEmbeddings()
+            try:
+                conn = psycopg2.connect(secrets["POSTGRES_URL"])
+                cur = conn.cursor()
+                
+                for uploaded_file in uploaded_files:
+                    with st.spinner(f"Indexing {uploaded_file.name}..."):
+                        # קריאת הטקסט מה-PDF
+                        pdf_reader = pypdf.PdfReader(uploaded_file)
+                        text = ""
+                        for page in pdf_reader.pages:
+                            text += page.extract_text() or ""
+                        
+                        # חלוקה לצ'אנקים (פיסות טקסט)
+                        chunks = [text[i:i+1000] for i in range(0, len(text), 800)]
+                        
+                        # הטבעה (Embedding) ושמירה לדאטה-בייס
+                        for chunk in chunks:
+                            if len(chunk.strip()) < 50: continue
+                            embedding = embedder.embed_query(chunk)
+                            cur.execute(
+                                "INSERT INTO legal_chunks (chunk_text, embedding, filename) VALUES (%s, %s, %s)",
+                                (chunk, json.dumps(embedding), uploaded_file.name)
+                            )
+                
+                conn.commit()
+                cur.close()
+                conn.close()
+                st.success(f"Success: {len(uploaded_files)} documents indexed and ready for analysis.")
+                st.balloons()
+            except Exception as e:
+                st.error(f"Vault Update Failed: {str(e)}")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
 st.markdown("""
