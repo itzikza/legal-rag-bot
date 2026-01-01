@@ -6,7 +6,7 @@ import numpy as np
 import google.generativeai as genai
 from langchain_core.embeddings import Embeddings
 
-# --- LEXIS AI: REFINED ALIGNMENT EDITION ---
+# --- LEXIS AI: ARCHITECT PRECISION EDITION ---
 st.set_page_config(page_title="Lexis AI | Elite Legal RAG", page_icon="⚖️", layout="wide")
 
 st.markdown("""
@@ -41,7 +41,6 @@ st.markdown("""
         line-height: 1;
     }
 
-    /* כרטיסיה מרכזית - ללא ריחוף */
     .static-glass-card {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px);
@@ -52,7 +51,6 @@ st.markdown("""
         text-align: left;
     }
 
-    /* כרטיסיית הודעות - עם ריחוף */
     .message-glass-card {
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px);
@@ -62,12 +60,7 @@ st.markdown("""
         margin-bottom: 25px;
         transition: all 0.4s ease;
     }
-    .message-glass-card:hover {
-        transform: translateY(-5px);
-        border-color: rgba(255, 255, 255, 0.4);
-    }
 
-    /* כפתורי יתרונות (Chips) - עם ריחוף זוהר */
     .feature-chip {
         border: 1px solid rgba(255, 255, 255, 0.4);
         padding: 12px 24px;
@@ -127,6 +120,11 @@ st.markdown("""
         transition: all 0.3s ease;
     }
 
+    /* תיקון לשורת החיפוש שתהיה בתוך הקונטיינר ולא למטה */
+    .search-container {
+        margin-bottom: 4rem;
+    }
+
     .stMarkdown p, .stMarkdown span, div, label, li {
         color: #ffffff !important;
     }
@@ -135,7 +133,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- RAG Engine ---
+# --- RAG Engine (ללא שינוי) ---
 def get_secrets():
     return {"POSTGRES_URL": st.secrets["POSTGRES_URL"], "GEMINI_API_KEY": st.secrets["GEMINI_API_KEY"]}
 
@@ -170,7 +168,7 @@ class PostgreSQLVectorStore:
 st.markdown("<div class='brand-title'>LEXIS AI</div>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: #555; font-size: 1.2rem; letter-spacing: 8px; margin-bottom: 5rem;'>ENGINEERED LEGAL INTELLIGENCE</p>", unsafe_allow_html=True)
 
-# כרטיסייה מרכזית סטטית (ללא Hover)
+# 1. כרטיסייה מרכזית סטטית
 st.markdown("""
     <div class='static-glass-card'>
         <div style='font-size: 2.8rem; font-weight: 800; margin-bottom: 20px; letter-spacing: -1.5px;'>Your Documents, Empowered.</div>
@@ -183,15 +181,16 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-if "active_btn" not in st.session_state:
-    st.session_state.active_btn = None
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "active_btn" not in st.session_state: st.session_state.active_btn = None
+if "messages" not in st.session_state: st.session_state.messages = []
 
-# --- שינוי המיקום: שורת החיפוש מעל ה-Analysis Suite ---
-chat_input = st.chat_input("ask your legal question...")
+# --- 2. שורת החיפוש בתוך Container כדי למנוע ממנה לצוף למטה ---
+with st.container():
+    st.markdown("<div class='search-container'>", unsafe_allow_html=True)
+    chat_input = st.chat_input("ask your legal question...")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# יישור לאמצע של כותרת הניתוח
+# 3. ANALYSIS SUITE
 st.markdown("<div style='font-size: 1.2rem; color: #444; font-weight: 800; margin-bottom: 2rem; margin-top: 2rem; letter-spacing: 2px; text-align: center;'>ANALYSIS SUITE</div>", unsafe_allow_html=True)
 
 c1, c2, c3 = st.columns(3)
