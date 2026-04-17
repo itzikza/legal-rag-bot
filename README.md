@@ -1,92 +1,104 @@
 # Lexis AI — Legal Intelligence Platform
 
-> A production-grade RAG legal assistant. Hybrid mode: general legal Q&A + document-grounded analysis.
-> Built with FastAPI + Gemini + PostgreSQL. Clean, Apple-inspired UI.
+> A production-grade RAG-powered legal assistant that answers legal questions grounded in real documents — with zero hallucinations.
+
+🌐 **[Live Demo](https://your-site.netlify.app)** &nbsp;|&nbsp; ⚖️ Built with FastAPI · Gemini API · PostgreSQL · RAG
 
 ---
 
-## 📁 Repository Structure (what goes where on GitHub)
+## What It Does
+
+Lexis AI lets users ask legal questions in natural language and get precise, source-grounded answers. It operates in two modes:
+
+- **Document mode** — answers are retrieved from indexed legal documents using semantic search
+- **General mode** — falls back to broad legal knowledge when no relevant document is found
+
+The system automatically decides which mode to use based on similarity scoring — no user configuration needed.
+
+---
+
+## System Architecture
 
 ```
-legal-rag-bot/                   ← your GitHub repo root
-│
-├── backend/
-│   ├── main.py                  ← FastAPI server (all endpoints)
-│   ├── requirements.txt
-│   └── .env.example             ← template (never commit .env!)
-│
-├── frontend/
-│   ├── index.html               ← public user-facing UI
-│   └── admin.html               ← private admin panel (upload docs)
-│
-├── .gitignore
-└── README.md
+User Query
+    ↓
+FastAPI Backend
+    ↓
+Embed query (Gemini API)
+    ↓
+Cosine similarity search → PostgreSQL vector store
+    ↓
+Score threshold check
+    ↓
+  > 0.5 → Document-grounded answer (RAG mode)
+  < 0.5 → General legal knowledge (LLM mode)
+    ↓
+Gemini 1.5 Flash → Structured response
 ```
 
 ---
 
-## ⚙️ Local Setup
+## Tech Stack
 
-### 1. Backend
+| Layer | Technology |
+|-------|-----------|
+| Backend | FastAPI (Python) |
+| LLM & Embeddings | Google Gemini API |
+| Vector Store | PostgreSQL (Supabase/Neon) |
+| Similarity Search | Cosine similarity (NumPy) |
+| Frontend | Vanilla HTML/CSS/JS |
+| Deployment | Render (backend) · Netlify (frontend) |
+
+---
+
+## Key Engineering Decisions
+
+**Why PostgreSQL for vectors instead of Pinecone/Chroma?**
+Demonstrates understanding of how vector storage works at the database level — embeddings stored as JSONB, similarity computed in Python via NumPy. Intentionally avoids black-box vector DB abstractions.
+
+**Why a hybrid RAG approach?**
+Pure RAG fails when no relevant document exists. The fallback to general LLM knowledge makes the system usable from day one, even with an empty vault.
+
+**Why separate admin/user surfaces?**
+The document upload interface is completely hidden from end users — only accessible via a private URL. Demonstrates security-conscious product thinking.
+
+---
+
+## Features
+
+- Semantic document search with embedding-based retrieval
+- Automatic RAG vs. general knowledge routing
+- PDF ingestion with overlapping chunking strategy
+- Duplicate detection on re-upload
+- Rate limit handling with exponential backoff
+- Clean REST API with full CRUD for document management
+
+---
+
+## Local Development
 
 ```bash
+# 1. Install dependencies
 cd backend
 pip install -r requirements.txt
+
+# 2. Set environment variables
 cp .env.example .env
-# Fill in GEMINI_API_KEY and POSTGRES_URL in .env
+# Fill in GEMINI_API_KEY and POSTGRES_URL
+
+# 3. Run
 uvicorn main:app --reload --port 8000
+
+# 4. Open frontend/index.html in browser
 ```
 
-### 2. Frontend
+**Required environment variables:**
+```
+GEMINI_API_KEY=...
+POSTGRES_URL=postgresql://...
+```
 
-Just open `frontend/index.html` in a browser — no build step needed.
-
----
-
-## 🚀 Deployment (Free Tier)
-
-### Backend → Render.com (free)
-
-1. Go to [render.com](https://render.com) → New → Web Service
-2. Connect your GitHub repo
-3. Settings:
-   - **Root directory:** `backend`
-   - **Build command:** `pip install -r requirements.txt`
-   - **Start command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Add environment variables:
-   - `GEMINI_API_KEY` = your key
-   - `POSTGRES_URL` = your Supabase/Neon connection string
-5. Deploy → copy the URL (e.g. `https://lexis-ai.onrender.com`)
-
-### Frontend → Netlify (free)
-
-1. Go to [netlify.com](https://netlify.com) → Add new site → Deploy manually
-2. Drag & drop the `frontend/` folder
-3. Done — Netlify gives you a live URL
-
-> Before deploying frontend, update `API_BASE` in both `index.html` and `admin.html`:
-> ```js
-> const API_BASE = 'https://lexis-ai.onrender.com'; // your Render URL
-> ```
-
----
-
-## 🔒 Admin Panel
-
-The admin panel (`/admin.html`) is not linked anywhere in the public UI.
-Only you know it exists. Use it to:
-- Upload PDFs into the knowledge vault
-- Monitor indexed documents
-- Remove documents
-
-Access it at: `https://your-netlify-url.netlify.app/admin.html`
-
----
-
-## 🗄️ Database Setup (Supabase / Neon)
-
-Run once in your PostgreSQL database:
-
+**Database setup (run once):**
 ```sql
 CREATE TABLE IF NOT EXISTS legal_chunks (
     id TEXT PRIMARY KEY,
@@ -97,51 +109,3 @@ CREATE TABLE IF NOT EXISTS legal_chunks (
     created_at TIMESTAMP DEFAULT NOW()
 );
 ```
-
----
-
-## API Reference
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| POST | `/chat` | Chat (RAG or general) |
-| POST | `/upload` | Upload PDFs (admin) |
-| GET | `/documents` | List indexed documents |
-| DELETE | `/documents/{filename}` | Remove a document |
-
-### POST /chat
-
-```json
-{
-  "message": "What are the termination clauses?",
-  "use_rag": true,
-  "top_k": 3
-}
-```
-
----
-
-## 📄 .gitignore
-
-Make sure your `.gitignore` includes:
-
-```
-.env
-__pycache__/
-*.pyc
-.DS_Store
-```
-
----
-
-## 💼 Resume / CV
-
-**Put both links on your resume:**
-
-- 🌐 **Live site:** `https://your-site.netlify.app` → Shows the finished product
-- 💻 **GitHub:** `https://github.com/itzikza/legal-rag-bot` → Shows your code quality
-
-Label it like:
-> **Lexis AI** — RAG Legal Assistant | [Live Demo](https://...) · [GitHub](https://...)
-> FastAPI · Gemini API · PostgreSQL · Retrieval-Augmented Generation · Deployed on Render + Netlify
