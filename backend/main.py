@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi import FastAPI
+from pydantic import BaseModel
 import os, json, uuid, time
 import numpy as np
 import psycopg2
