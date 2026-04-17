@@ -1,13 +1,12 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-import os, json, uuid, time
+import os, json, uuid, time, io
 import numpy as np
-import psycopg2
+import asyncpg
 import pypdf
 import google.generativeai as genai
-from typing import Optional, List
+from typing import List
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -51,14 +50,15 @@ Rules:
 - Format responses with clear structure when appropriate.
 """
 
-# --- DB ---
-def get_db():
-    return psycopg2.connect(POSTGRES_URL)
+# --- DB helpers ---
+async def get_db():
+    # asyncpg needs postgresql:// not postgres://
+    url = POSTGRES_URL.replace("postgres://", "postgresql://")
+    return await asyncpg.connect(url)
 
-def ensure_table():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
+async def ensure_table():
+    conn = await get_db()
+    await conn.execute("""
         CREATE TABLE IF NOT EXISTS legal_chunks (
             id TEXT PRIMARY KEY,
             chunk_text TEXT,
@@ -68,14 +68,14 @@ def ensure_table():
             created_at TIMESTAMP DEFAULT NOW()
         )
     """)
-    conn.commit()
-    cur.close()
-    conn.close()
+    await conn.close()
 
-try:
-    ensure_table()
-except Exception as e:
-    print(f"Warning: Could not ensure table: {e}")
+@app.on_event("startup")
+async def startup():
+    try:
+        await ensure_table()
+    except Exception as e:
+        print(f"Warning: Could not ensure table: {e}")
 
 # --- Embedding ---
 def embed_text(text: str, task_type: str = "retrieval_query") -> List[float]:
@@ -108,7 +108,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: List[str] = []
-    mode: str  # "rag" | "general"
+    mode: str
 
 # --- Endpoints ---
 @app.get("/health")
@@ -123,21 +123,17 @@ async def chat(req: ChatRequest):
         mode = "general"
 
         if req.use_rag:
-            # Retrieve relevant chunks
             q_emb = embed_text(req.message, task_type="retrieval_query")
-            conn = get_db()
-            cur = conn.cursor()
-            cur.execute("SELECT chunk_text, embedding, filename FROM legal_chunks LIMIT 2000")
-            rows = cur.fetchall()
-            cur.close()
-            conn.close()
+            conn = await get_db()
+            rows = await conn.fetch("SELECT chunk_text, embedding, filename FROM legal_chunks LIMIT 2000")
+            await conn.close()
 
             if rows:
                 scored = []
-                for chunk_text, emb_raw, filename in rows:
-                    emb = json.loads(emb_raw) if isinstance(emb_raw, str) else emb_raw
+                for row in rows:
+                    emb = json.loads(row['embedding']) if isinstance(row['embedding'], str) else row['embedding']
                     score = cosine_similarity(q_emb, emb)
-                    scored.append((score, chunk_text, filename))
+                    scored.append((score, row['chunk_text'], row['filename']))
                 scored.sort(reverse=True)
                 top = scored[:req.top_k]
 
@@ -151,7 +147,6 @@ async def chat(req: ChatRequest):
                     context_block = "\n\n---\n\n".join(context_parts)
                     sources = list(seen_files)
 
-        # Build prompt
         if mode == "rag":
             user_prompt = f"""Based on the following legal document excerpts, answer the question.
 
@@ -171,9 +166,7 @@ Answer using your general legal knowledge. Be precise and professional."""
             system_instruction=LEGAL_SYSTEM_PROMPT
         )
         response = model.generate_content(user_prompt)
-        answer = response.text
-
-        return ChatResponse(answer=answer, sources=sources, mode=mode)
+        return ChatResponse(answer=response.text, sources=sources, mode=mode)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -182,8 +175,7 @@ Answer using your general legal knowledge. Be precise and professional."""
 @app.post("/upload")
 async def upload_documents(files: List[UploadFile] = File(...)):
     results = []
-    conn = get_db()
-    cur = conn.cursor()
+    conn = await get_db()
 
     for file in files:
         try:
@@ -191,16 +183,12 @@ async def upload_documents(files: List[UploadFile] = File(...)):
                 results.append({"file": file.filename, "status": "error", "message": "Only PDF supported"})
                 continue
 
-            # Check duplicate
-            cur.execute("SELECT COUNT(*) FROM legal_chunks WHERE filename = %s", (file.filename,))
-            count = cur.fetchone()[0]
+            count = await conn.fetchval("SELECT COUNT(*) FROM legal_chunks WHERE filename = $1", file.filename)
             if count > 0:
                 results.append({"file": file.filename, "status": "skipped", "message": f"Already indexed ({count} chunks)"})
                 continue
 
-            # Extract text
             content = await file.read()
-            import io
             reader = pypdf.PdfReader(io.BytesIO(content))
             text = "".join([p.extract_text() or "" for p in reader.pages])
 
@@ -208,68 +196,58 @@ async def upload_documents(files: List[UploadFile] = File(...)):
                 results.append({"file": file.filename, "status": "error", "message": "Could not extract text"})
                 continue
 
-            # Chunk with overlap
             chunk_size = 1500
             overlap = 200
             chunks = []
             start = 0
             while start < len(text):
-                end = start + chunk_size
-                chunks.append(text[start:end])
+                chunks.append(text[start:start + chunk_size])
                 start += chunk_size - overlap
-
             chunks = [c for c in chunks if len(c.strip()) > 50]
 
-            # Embed and store
             indexed = 0
             for i, chunk in enumerate(chunks):
                 try:
                     emb = embed_text(chunk, task_type="retrieval_document")
-                    cur.execute(
-                        "INSERT INTO legal_chunks (id, chunk_text, embedding, filename, split_strategy) VALUES (%s, %s, %s, %s, %s)",
-                        (str(uuid.uuid4()), chunk, json.dumps(emb), file.filename, "recursive_overlap")
+                    await conn.execute(
+                        "INSERT INTO legal_chunks (id, chunk_text, embedding, filename, split_strategy) VALUES ($1, $2, $3, $4, $5)",
+                        str(uuid.uuid4()), chunk, json.dumps(emb), file.filename, "recursive_overlap"
                     )
                     indexed += 1
                     if i % 3 == 0:
-                        time.sleep(0.5)  # rate limit buffer
+                        time.sleep(0.5)
                 except Exception as e:
                     print(f"Chunk error: {e}")
                     continue
 
-            conn.commit()
             results.append({"file": file.filename, "status": "success", "chunks": indexed})
 
         except Exception as e:
             results.append({"file": file.filename, "status": "error", "message": str(e)})
 
-    cur.close()
-    conn.close()
+    await conn.close()
     return {"results": results}
 
 
 @app.get("/documents")
-def list_documents():
+async def list_documents():
     try:
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT filename, COUNT(*) as chunks, MAX(created_at) as uploaded_at FROM legal_chunks GROUP BY filename ORDER BY uploaded_at DESC")
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-        return {"documents": [{"filename": r[0], "chunks": r[1], "uploaded_at": str(r[2])} for r in rows]}
+        conn = await get_db()
+        rows = await conn.fetch(
+            "SELECT filename, COUNT(*) as chunks, MAX(created_at) as uploaded_at FROM legal_chunks GROUP BY filename ORDER BY uploaded_at DESC"
+        )
+        await conn.close()
+        return {"documents": [{"filename": r['filename'], "chunks": r['chunks'], "uploaded_at": str(r['uploaded_at'])} for r in rows]}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/documents/{filename}")
-def delete_document(filename: str):
+async def delete_document(filename: str):
     try:
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM legal_chunks WHERE filename = %s", (filename,))
-        conn.commit()
-        cur.close()
-        conn.close()
+        conn = await get_db()
+        await conn.execute("DELETE FROM legal_chunks WHERE filename = $1", filename)
+        await conn.close()
         return {"status": "deleted", "filename": filename}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
