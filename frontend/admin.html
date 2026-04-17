@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lexis Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Figtree',sans-serif;background:#0a0a0a;color:#f5f5f7;min-height:100vh;padding:2rem;-webkit-font-smoothing:antialiased}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2.5rem;padding-bottom:1.25rem;border-bottom:1px solid rgba(255,255,255,.08)}
+.logo{font-size:.8rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:#fff}
+.badge{font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.12em;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.12);padding:3px 10px;text-transform:uppercase}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:900px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.card{background:#111;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:1.5rem}
+.card-title{font-size:.65rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:1.25rem}
+
+/* upload zone */
+.zone{border:1.5px dashed rgba(255,255,255,.12);border-radius:8px;padding:2rem;text-align:center;transition:all .2s;background:rgba(255,255,255,.015)}
+.zone:hover,.zone.over{border-color:rgba(255,255,255,.32);background:rgba(255,255,255,.04)}
+.zone-icon{font-size:1.6rem;display:block;margin-bottom:.5rem;opacity:.5}
+.zone-text{font-size:.78rem;color:rgba(255,255,255,.35);line-height:1.6}
+#file-inp{display:none}
+.btn{display:inline-block;margin-top:.85rem;padding:8px 20px;background:#fff;color:#000;font-family:'Figtree',sans-serif;font-size:.76rem;font-weight:600;border:none;border-radius:7px;letter-spacing:.04em;transition:opacity .2s}
+.btn:hover{opacity:.88}
+.btn.danger{background:rgba(255,60,60,.15);color:rgba(255,100,100,.9);border:1px solid rgba(255,60,60,.2)}
+.btn.danger:hover{background:rgba(255,60,60,.22)}
+.btn:disabled{opacity:.3}
+
+/* doc list */
+.doc-item{display:flex;align-items:center;justify-content:space-between;padding:.6rem .75rem;border:1px solid rgba(255,255,255,.06);border-radius:7px;margin-bottom:.4rem;animation:fadeIn .25s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.doc-name{font-size:.78rem;color:#f5f5f7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.doc-meta{font-family:'DM Mono',monospace;font-size:.62rem;color:rgba(255,255,255,.3);margin-left:.5rem;white-space:nowrap}
+.doc-del{background:none;border:none;color:rgba(255,255,255,.25);font-size:.7rem;padding:2px 5px;transition:color .2s}
+.doc-del:hover{color:rgba(255,100,100,.8)}
+.empty{font-size:.75rem;color:rgba(255,255,255,.2);text-align:center;padding:1.5rem 0;font-style:italic}
+
+/* progress log */
+.log{background:#0d0d0d;border:1px solid rgba(255,255,255,.06);border-radius:7px;padding:1rem;min-height:80px;max-height:200px;overflow-y:auto;margin-top:1rem}
+.log-line{font-family:'DM Mono',monospace;font-size:.65rem;line-height:1.8;color:rgba(255,255,255,.35)}
+.log-line.ok{color:rgba(100,220,120,.7)}
+.log-line.err{color:rgba(255,100,100,.7)}
+.log-line.info{color:rgba(100,160,255,.7)}
+
+/* health */
+.health{display:flex;align-items:center;gap:.5rem;font-family:'DM Mono',monospace;font-size:.65rem;color:rgba(255,255,255,.3)}
+.hdot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2)}
+.hdot.ok{background:rgba(80,220,100,.7);box-shadow:0 0 8px rgba(80,220,100,.4)}
+.hdot.err{background:rgba(255,80,80,.7)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Lexis Admin</div>
+  <div style="display:flex;gap:1rem;align-items:center">
+    <div class="health"><div class="hdot" id="hdot"></div><span id="hstatus">Checking...</span></div>
+    <div class="badge">Private</div>
+  </div>
+</div>
+
+<div class="grid">
+
+  <!-- UPLOAD -->
+  <div class="card">
+    <div class="card-title">Upload Documents</div>
+    <div class="zone" id="zone">
+      <input type="file" id="file-inp" accept=".pdf" multiple />
+      <span class="zone-icon">📄</span>
+      <div class="zone-text">Drag &amp; drop PDFs here<br>or click to browse</div>
+      <button class="btn" onclick="document.getElementById('file-inp').click()">Choose Files</button>
+    </div>
+    <div class="log" id="log"><div class="log-line">Ready.</div></div>
+  </div>
+
+  <!-- DOCUMENTS -->
+  <div class="card">
+    <div class="card-title">Indexed Documents <span id="doc-count" style="opacity:.4"></span></div>
+    <div id="doc-list"><div class="empty">No documents indexed yet.</div></div>
+    <button class="btn danger" style="margin-top:1rem;width:100%;text-align:center" onclick="confirmClear()">Clear All Documents</button>
+  </div>
+
+</div>
+
+<script>
+const API = (location.hostname==='localhost'||location.hostname==='127.0.0.1')
+  ? 'http://localhost:8000'
+  : 'https://your-backend.onrender.com'; // ← same as index.html
+
+const zone = document.getElementById('zone');
+const fileInp = document.getElementById('file-inp');
+const logEl = document.getElementById('log');
+const docList = document.getElementById('doc-list');
+const hdot = document.getElementById('hdot');
+const hstatus = document.getElementById('hstatus');
+
+function log(msg, type='') {
+  const d = document.createElement('div');
+  d.className = `log-line ${type}`;
+  d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.appendChild(d);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// health check
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    if (r.ok) { hdot.className='hdot ok'; hstatus.textContent='Backend online'; }
+    else throw new Error();
+  } catch { hdot.className='hdot err'; hstatus.textContent='Backend offline'; }
+}
+
+// drag & drop
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); handleFiles([...e.dataTransfer.files].filter(f=>f.type==='application/pdf')); });
+zone.addEventListener('click', e => { if(e.target.tagName!=='BUTTON') fileInp.click(); });
+fileInp.addEventListener('change', () => { handleFiles([...fileInp.files]); fileInp.value=''; });
+
+async function handleFiles(files) {
+  if (!files.length) return;
+  log(`Uploading ${files.length} file(s)…`, 'info');
+  const fd = new FormData();
+  files.forEach(f => fd.append('files', f));
+  try {
+    const r = await fetch(`${API}/upload`, { method:'POST', body:fd });
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    d.results.forEach(x => {
+      if (x.status==='success') log(`✓ ${x.file} — ${x.chunks} chunks indexed`, 'ok');
+      else if (x.status==='skipped') log(`↩ ${x.file} — already in vault`, '');
+      else log(`✗ ${x.file} — ${x.message}`, 'err');
+    });
+    loadDocs();
+  } catch(e) { log(`Upload failed: ${e.message}`, 'err'); }
+}
+
+async function loadDocs() {
+  try {
+    const r = await fetch(`${API}/documents`);
+    const d = await r.json();
+    const docs = d.documents || [];
+    document.getElementById('doc-count').textContent = `(${docs.length})`;
+    if (!docs.length) { docList.innerHTML='<div class="empty">No documents indexed yet.</div>'; return; }
+    docList.innerHTML = docs.map(doc => `
+      <div class="doc-item">
+        <div style="display:flex;align-items:center;min-width:0">
+          <span class="doc-name" title="${esc(doc.filename)}">${esc(doc.filename)}</span>
+          <span class="doc-meta">${doc.chunks}c</span>
+        </div>
+        <button class="doc-del" onclick="delDoc('${esc(doc.filename)}')">✕</button>
+      </div>
+    `).join('');
+  } catch { docList.innerHTML='<div class="empty">Could not load documents.</div>'; }
+}
+
+async function delDoc(name) {
+  if (!confirm(`Remove "${name}" from vault?`)) return;
+  await fetch(`${API}/documents/${encodeURIComponent(name)}`, { method:'DELETE' });
+  log(`Removed: ${name}`);
+  loadDocs();
+}
+
+async function confirmClear() {
+  if (!confirm('Delete ALL indexed documents from the vault? This cannot be undone.')) return;
+  try {
+    const r = await fetch(`${API}/documents`);
+    const d = await r.json();
+    for (const doc of d.documents||[]) {
+      await fetch(`${API}/documents/${encodeURIComponent(doc.filename)}`, { method:'DELETE' });
+    }
+    log('All documents cleared.', 'ok');
+    loadDocs();
+  } catch(e) { log('Failed to clear: '+e.message, 'err'); }
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+checkHealth();
+loadDocs();
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>
