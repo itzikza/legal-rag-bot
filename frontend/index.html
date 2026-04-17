@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lexis AI — Legal Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #000;
+  --surface: #0a0a0a;
+  --surface2: #111;
+  --border: rgba(255,255,255,0.08);
+  --border-hi: rgba(255,255,255,0.18);
+  --text: #f5f5f7;
+  --muted: rgba(255,255,255,0.38);
+  --dim: rgba(255,255,255,0.18);
+  --white: #fff;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;cursor:none!important}
+html,body{height:100%;font-family:'Figtree',-apple-system,sans-serif;background:var(--bg);color:var(--text);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* cursor */
+#cur{position:fixed;width:8px;height:8px;background:#fff;border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);transition:width .12s,height .12s;mix-blend-mode:difference}
+#cur.big{width:30px;height:30px;opacity:.45}
+
+/* ambient glow */
+.ambient{position:fixed;top:-30vh;left:50%;transform:translateX(-50%);width:70vw;height:60vh;background:radial-gradient(ellipse,rgba(255,255,255,.035) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+/* header */
+header{position:fixed;top:0;left:0;right:0;z-index:50;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:rgba(0,0,0,.75);backdrop-filter:blur(24px) saturate(180%);-webkit-backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--border)}
+.logo{font-size:.85rem;font-weight:700;letter-spacing:.28em;text-transform:uppercase;color:var(--white)}
+.header-tag{font-size:.58rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);border:1px solid rgba(255,255,255,.12);padding:3px 10px}
+
+/* app */
+.app{position:fixed;inset:0;display:flex;flex-direction:column;padding-top:52px;z-index:1}
+
+/* hero */
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;padding:2rem;text-align:center;transition:opacity .45s,transform .45s;position:relative;z-index:1}
+.hero.gone{opacity:0;transform:translateY(-24px);pointer-events:none;position:absolute;top:52px;left:0;right:0}
+.eyebrow{font-size:.62rem;font-weight:500;letter-spacing:.28em;text-transform:uppercase;color:var(--dim);animation:up .9s ease both}
+.h-title{font-size:clamp(2.4rem,6vw,5.2rem);font-weight:700;line-height:1.04;letter-spacing:-.03em;animation:up .9s .1s ease both}
+.h-title .grad{background:linear-gradient(160deg,#fff 40%,rgba(255,255,255,.38));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.h-sub{font-size:.95rem;font-weight:300;color:var(--muted);max-width:400px;line-height:1.75;animation:up .9s .2s ease both}
+.chips{display:flex;gap:.45rem;flex-wrap:wrap;justify-content:center;animation:up .9s .3s ease both}
+.chip{padding:6px 15px;border:1px solid var(--border-hi);font-size:.7rem;font-weight:500;letter-spacing:.04em;color:var(--muted);background:rgba(255,255,255,.03);border-radius:20px;transition:all .2s;white-space:nowrap}
+.chip:hover{border-color:rgba(255,255,255,.32);color:var(--white);background:rgba(255,255,255,.06);box-shadow:0 0 14px rgba(255,255,255,.07)}
+@keyframes up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+/* chat */
+.chat{flex:1;overflow:hidden;display:none;flex-direction:column}
+.chat.on{display:flex}
+.msgs{flex:1;overflow-y:auto;padding:2rem clamp(1rem,12vw,22rem);display:flex;flex-direction:column;gap:1.5rem;scroll-behavior:smooth}
+.msgs::-webkit-scrollbar{width:3px}
+.msgs::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:2px}
+
+.msg{display:flex;flex-direction:column;max-width:660px;animation:msgIn .3s cubic-bezier(.2,.8,.4,1) both}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg.u{align-self:flex-end;align-items:flex-end}
+.msg.a{align-self:flex-start;align-items:flex-start}
+.mlabel{font-size:.58rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:.28rem}
+.mbubble{padding:.85rem 1.15rem;font-size:.88rem;line-height:1.74;font-weight:400}
+.msg.u .mbubble{background:var(--white);color:#000;border-radius:18px 18px 4px 18px}
+.msg.a .mbubble{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:4px 18px 18px 18px;box-shadow:0 0 0 1px rgba(255,255,255,.025)}
+
+/* markdown */
+.msg.a .mbubble strong{color:#fff;font-weight:600}
+.msg.a .mbubble em{color:var(--muted)}
+.msg.a .mbubble code{font-family:'SF Mono',monospace;font-size:.78em;background:rgba(255,255,255,.07);padding:1px 5px;border-radius:3px}
+.msg.a .mbubble h2,.msg.a .mbubble h3{color:#fff;font-weight:600;margin:.75em 0 .25em}
+.msg.a .mbubble ul,.msg.a .mbubble ol{padding-left:1.2em;margin:.35em 0}
+.msg.a .mbubble li{margin-bottom:.2em}
+.msg.a .mbubble p{margin-bottom:.45em}
+.msg.a .mbubble p:last-child{margin-bottom:0}
+
+.msrc{margin-top:.35rem;font-size:.58rem;font-weight:500;letter-spacing:.1em;color:var(--dim);display:flex;align-items:center;gap:.4rem;text-transform:uppercase}
+.sdot{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.25)}
+
+/* typing */
+.tdots{display:flex;align-items:center;gap:5px;padding:.85rem 1.15rem;background:var(--surface2);border:1px solid var(--border);border-radius:4px 18px 18px 18px;width:fit-content}
+.tdots span{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.3);animation:tp 1.3s ease-in-out infinite}
+.tdots span:nth-child(2){animation-delay:.2s}
+.tdots span:nth-child(3){animation-delay:.4s}
+@keyframes tp{0%,80%,100%{transform:scale(.8);opacity:.3}40%{transform:scale(1.15);opacity:1}}
+
+/* input area */
+.input-area{padding:.85rem clamp(1rem,12vw,22rem) 1.4rem;background:linear-gradient(to top,#000 55%,transparent);position:relative;z-index:2}
+.input-area::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:180px;height:1px;background:linear-gradient(to right,transparent,rgba(255,255,255,.12),transparent)}
+
+/* suggestions */
+.sugs{display:none;gap:.4rem;overflow-x:auto;padding-bottom:.65rem;scrollbar-width:none}
+.sugs::-webkit-scrollbar{display:none}
+.sugs.on{display:flex}
+.sbtn{border:1px solid var(--border);background:rgba(255,255,255,.025);color:var(--muted);font-family:'Figtree',sans-serif;font-size:.7rem;font-weight:500;padding:5px 13px;border-radius:20px;white-space:nowrap;transition:all .2s}
+.sbtn:hover{border-color:rgba(255,255,255,.24);color:var(--white);background:rgba(255,255,255,.055);box-shadow:0 0 10px rgba(255,255,255,.05)}
+
+/* input box */
+.ibox{display:flex;align-items:flex-end;gap:.6rem;background:var(--surface2);border:1px solid var(--border-hi);border-radius:14px;padding:.55rem .55rem .55rem 1rem;transition:border-color .25s,box-shadow .25s;position:relative}
+.ibox::after{content:'';position:absolute;inset:-1px;border-radius:15px;background:linear-gradient(135deg,rgba(255,255,255,0),rgba(255,255,255,0));transition:background .3s;pointer-events:none;z-index:-1}
+.ibox.on{border-color:rgba(255,255,255,.26);box-shadow:0 0 28px rgba(255,255,255,.04),inset 0 1px 0 rgba(255,255,255,.05)}
+.ibox.on::after{background:linear-gradient(135deg,rgba(255,255,255,.07),transparent)}
+
+#inp{flex:1;background:none;border:none;outline:none;font-family:'Figtree',sans-serif;font-size:.9rem;font-weight:400;color:var(--white);resize:none;line-height:1.55;min-height:22px;max-height:130px;padding:3px 0}
+#inp::placeholder{color:rgba(255,255,255,.2)}
+
+/* send button */
+.snd{width:34px;height:34px;border-radius:9px;border:none;background:var(--white);color:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .15s,box-shadow .2s;position:relative;overflow:hidden}
+.snd::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.35),transparent);opacity:0;transition:opacity .2s}
+.snd:hover{transform:scale(1.08);box-shadow:0 0 18px rgba(255,255,255,.28)}
+.snd:hover::before{opacity:1}
+.snd:active{transform:scale(.93)}
+.snd:disabled{opacity:.28;transform:none;box-shadow:none}
+.snd svg{width:13px;height:13px;stroke:#000;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+
+.disc{text-align:center;font-size:.6rem;color:var(--dim);margin-top:.55rem;letter-spacing:.025em}
+
+/* toast */
+.toast{position:fixed;bottom:6.5rem;left:50%;transform:translateX(-50%) translateY(8px);background:#180000;border:1px solid rgba(255,60,60,.28);color:rgba(255,110,110,.85);font-size:.72rem;padding:7px 16px;border-radius:7px;opacity:0;transition:all .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div class="ambient"></div>
+
+<header>
+  <div class="logo">Lexis AI</div>
+  <div class="header-tag">Legal Intelligence</div>
+</header>
+
+<div class="app">
+
+  <div class="hero" id="hero">
+    <p class="eyebrow">AI · Legal Research · Document Analysis</p>
+    <h1 class="h-title"><span class="grad">Ask anything.<br>Get legal clarity.</span></h1>
+    <p class="h-sub">Precise answers grounded in legal knowledge and your documents. No fluff, no guesswork.</p>
+    <div class="chips">
+      <div class="chip" onclick="fire('What are my rights as a tenant?')">Tenant rights</div>
+      <div class="chip" onclick="fire('Explain force majeure clauses.')">Force majeure</div>
+      <div class="chip" onclick="fire('What is a breach of contract?')">Breach of contract</div>
+      <div class="chip" onclick="fire('How does intellectual property protection work?')">IP protection</div>
+      <div class="chip" onclick="fire('What are non-compete agreements?')">Non-compete</div>
+    </div>
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="msgs" id="msgs"></div>
+  </div>
+
+  <div class="input-area">
+    <div class="sugs" id="sugs"></div>
+    <div class="ibox" id="ibox">
+      <textarea id="inp" rows="1" placeholder="Ask a legal question…"></textarea>
+      <button class="snd" id="snd">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+      </button>
+    </div>
+    <p class="disc">Lexis AI provides legal information, not legal advice. Always consult a licensed attorney.</p>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000'
+  : 'https://your-backend.onrender.com'; // ← update after deploy
+
+// cursor
+const cur = document.getElementById('cur');
+document.addEventListener('mousemove', e => { cur.style.left=e.clientX+'px'; cur.style.top=e.clientY+'px'; });
+document.addEventListener('mousedown', () => cur.classList.add('big'));
+document.addEventListener('mouseup',   () => cur.classList.remove('big'));
+
+const hero  = document.getElementById('hero');
+const chat  = document.getElementById('chat');
+const msgs  = document.getElementById('msgs');
+const ibox  = document.getElementById('ibox');
+const inp   = document.getElementById('inp');
+const snd   = document.getElementById('snd');
+const sugs  = document.getElementById('sugs');
+const toast = document.getElementById('toast');
+
+let loading = false, started = false;
+
+const SUGS = ['Summarize the key risks','What are the payment terms?','Any unusual clauses?','Who bears liability?','What are the termination rights?'];
+
+inp.addEventListener('focus',  () => ibox.classList.add('on'));
+inp.addEventListener('blur',   () => ibox.classList.remove('on'));
+inp.addEventListener('input',  () => { inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,130)+'px'; });
+inp.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} });
+snd.addEventListener('click', send);
+
+function fire(q) { inp.value=q; inp.focus(); send(); }
+
+async function send() {
+  const text = inp.value.trim();
+  if (!text || loading) return;
+
+  if (!started) {
+    hero.classList.add('gone');
+    chat.classList.add('on');
+    started = true;
+  }
+
+  addMsg('u', text);
+  inp.value = '';
+  inp.style.height = 'auto';
+
+  const tid = addTyping();
+  loading = true;
+  snd.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ message: text, use_rag: true, top_k: 3 })
+    });
+    if (!res.ok) throw new Error(res.status);
+    const d = await res.json();
+    removeTyping(tid);
+    addMsg('a', d.answer, d.sources||[], d.mode);
+    showSugs();
+  } catch(e) {
+    removeTyping(tid);
+    addMsg('a', 'Unable to connect to the Lexis AI engine. Please try again in a moment.');
+    showToast('Connection error — is the backend running?');
+  }
+
+  loading = false;
+  snd.disabled = false;
+}
+
+function addMsg(role, content, sources=[], mode='') {
+  const el = document.createElement('div');
+  el.className = `msg ${role}`;
+  const lbl = role==='u' ? 'You' : 'Lexis AI';
+  const body = role==='a' ? md(content) : esc(content);
+  let src = '';
+  if (sources.length) src = `<div class="msrc"><div class="sdot"></div>${sources.map(esc).join(' · ')}</div>`;
+  else if (mode==='general') src = `<div class="msrc"><div class="sdot"></div>General legal knowledge</div>`;
+  el.innerHTML = `<div class="mlabel">${lbl}</div><div class="mbubble">${body}</div>${src}`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function addTyping() {
+  const id = 'ty'+Date.now();
+  const el = document.createElement('div');
+  el.className = 'msg a'; el.id = id;
+  el.innerHTML = `<div class="mlabel">Lexis AI</div><div class="tdots"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(el);
+  msgs.scrollTop = msgs.scrollHeight;
+  return id;
+}
+function removeTyping(id) { document.getElementById(id)?.remove(); }
+
+function showSugs() {
+  sugs.innerHTML = '';
+  sugs.classList.add('on');
+  SUGS.forEach(s => {
+    const b = document.createElement('button');
+    b.className='sbtn'; b.textContent=s;
+    b.onclick=()=>fire(s);
+    sugs.appendChild(b);
+  });
+}
+
+function md(t) {
+  return esc(t)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/_(.+?)_/g,'<em>$1</em>')
+    .replace(/`(.+?)`/g,'<code>$1</code>')
+    .replace(/^### (.+)$/gm,'<h3>$1</h3>')
+    .replace(/^## (.+)$/gm,'<h2>$1</h2>')
+    .replace(/^# (.+)$/gm,'<h1>$1</h1>')
+    .replace(/^[-•] (.+)$/gm,'<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)/g,'<ul>$1</ul>')
+    .replace(/\n{2,}/g,'</p><p>')
+    .replace(/\n/g,'<br>');
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function showToast(msg) {
+  toast.textContent=msg; toast.classList.add('on');
+  setTimeout(()=>toast.classList.remove('on'),4000);
+}
+</script>
+</body>
+</html>
