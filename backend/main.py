@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import os, json, uuid, time
 import numpy as np
-import psycopg2cffi as psycopg2
+import psycopg2
 import pypdf
 import google.generativeai as genai
 from typing import Optional, List
