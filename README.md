@@ -1,8 +1,8 @@
 # Lexis AI — Legal Intelligence Platform
 
-> A production-grade RAG-powered legal assistant that answers legal questions grounded in real documents — with zero hallucinations.
+> A production-grade RAG-powered legal assistant that answers legal questions grounded in real documents.
 
-🌐 **[Live Demo]([https://your-site.netlify.app](https://laxis-ai.netlify.app/))** &nbsp;|&nbsp; ⚖️ Built with FastAPI · Gemini API · PostgreSQL · RAG
+🌐 **[Live Demo](https://laxis-ai.netlify.app)** &nbsp;|&nbsp; Built with FastAPI · Gemini API · PostgreSQL · RAG
 
 ---
 
@@ -22,18 +22,20 @@ The system automatically decides which mode to use based on similarity scoring �
 ```
 User Query
     ↓
-FastAPI Backend
+FastAPI Backend (Hugging Face)
     ↓
-Embed query (Gemini API)
+Embed query → Gemini Embedding API (gemini-embedding-001)
     ↓
-Cosine similarity search → PostgreSQL vector store
+Cosine similarity search → PostgreSQL (Neon)
     ↓
 Score threshold check
     ↓
-  > 0.5 → Document-grounded answer (RAG mode)
-  < 0.5 → General legal knowledge (LLM mode)
+  > 0.4 → Document-grounded answer (RAG mode)
+  < 0.4 → General legal knowledge (LLM mode)
     ↓
-Gemini 1.5 Flash → Structured response
+Gemini 2.5 Flash → Structured response
+    ↓
+Frontend (Netlify)
 ```
 
 ---
@@ -44,10 +46,10 @@ Gemini 1.5 Flash → Structured response
 |-------|-----------|
 | Backend | FastAPI (Python) |
 | LLM & Embeddings | Google Gemini API |
-| Vector Store | PostgreSQL (Supabase/Neon) |
+| Vector Store | PostgreSQL (Neon) |
 | Similarity Search | Cosine similarity (NumPy) |
 | Frontend | Vanilla HTML/CSS/JS |
-| Deployment | Render (backend) · Netlify (frontend) |
+| Deployment | Hugging Face Spaces (backend) · Netlify (frontend) |
 
 ---
 
@@ -79,7 +81,6 @@ The document upload interface is completely hidden from end users — only acces
 
 ```bash
 # 1. Install dependencies
-cd backend
 pip install -r requirements.txt
 
 # 2. Set environment variables
@@ -87,7 +88,7 @@ cp .env.example .env
 # Fill in GEMINI_API_KEY and POSTGRES_URL
 
 # 3. Run
-uvicorn main:app --reload --port 8000
+uvicorn app:app --reload --port 8000
 
 # 4. Open frontend/index.html in browser
 ```
