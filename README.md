@@ -2,7 +2,7 @@
 
 > A production-grade RAG-powered legal assistant that answers legal questions grounded in real documents — with zero hallucinations.
 
-🌐 **[Live Demo](https://your-site.netlify.app)** &nbsp;|&nbsp; ⚖️ Built with FastAPI · Gemini API · PostgreSQL · RAG
+🌐 **[Live Demo]([https://your-site.netlify.app](https://laxis-ai.netlify.app/))** &nbsp;|&nbsp; ⚖️ Built with FastAPI · Gemini API · PostgreSQL · RAG
 
 ---
 
